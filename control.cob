@@ -109,15 +109,30 @@
                    PERFORM DO-CREATE
                ELSE
                    IF MSG = "STARTOVER"
-                        *> Clear accounts.txt
-                       OPEN OUTPUT ACCOUNTS
+                       *> Ensure file is not open before truncating
                        CLOSE ACCOUNTS
+
+                       *> Truncate accounts.txt (or create empty file)
+                       OPEN OUTPUT ACCOUNTS
                        MOVE "All accounts cleared. Returning to main menu." TO MSG
                        PERFORM WRITE-OUTPUT
-                       PERFORM PROCESS-COMMAND
-                   ELSE
-                      MOVE "Invalid choice, must be LOGIN, CREATE, or STARTOVER" TO MSG
-                      PERFORM WRITE-OUTPUT
+                       IF ACC-FS = "00"
+                          CLOSE ACCOUNTS
+                          OPEN I-O ACCOUNTS
+         
+                          *> Reset in-memory count so logic matches disk
+                          MOVE 0 TO ACCT-COUNT
+                       ELSE
+                          *> Surface the file-status for debugging
+                          STRING "STARTOVER failed. FILE STATUS=" ACC-FS
+                                 DELIMITED BY SIZE INTO MSG
+                          END-STRING
+                          PERFORM WRITE-OUTPUT
+                       END-IF
+                       EXIT PARAGRAPH
+                   ELSE 
+                       MOVE "Invalid Input" to MSG
+                       PERFORM WRITE-OUTPUT
                    END-IF
                END-IF
            END-IF.
