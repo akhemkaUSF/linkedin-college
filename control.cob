@@ -101,18 +101,27 @@
                NOT AT END
                    MOVE FUNCTION TRIM(INPUT-REC) TO MSG
            END-READ
-       
-           *> Decide what to do based on the user’s choice
+
            IF MSG = "LOGIN"
-              PERFORM DO-LOGIN
+               PERFORM DO-LOGIN
            ELSE
-              IF MSG = "CREATE"
-                 PERFORM DO-CREATE
-              ELSE
-                 MOVE "Invalid choice, must be LOGIN or CREATE" TO MSG
-                 PERFORM WRITE-OUTPUT
-              END-IF
+               IF MSG = "CREATE"
+                   PERFORM DO-CREATE
+               ELSE
+                   IF MSG = "STARTOVER"
+                        *> Clear accounts.txt
+                       OPEN OUTPUT ACCOUNTS
+                       CLOSE ACCOUNTS
+                       MOVE "All accounts cleared. Returning to main menu." TO MSG
+                       PERFORM WRITE-OUTPUT
+                       PERFORM PROCESS-COMMAND
+                   ELSE
+                      MOVE "Invalid choice, must be LOGIN, CREATE, or STARTOVER" TO MSG
+                      PERFORM WRITE-OUTPUT
+                   END-IF
+               END-IF
            END-IF.
+
 
 
        DO-LOGIN.
