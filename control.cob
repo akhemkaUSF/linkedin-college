@@ -150,18 +150,8 @@
                        INTO ACCT-USER ACCT-PASS
                     END-UNSTRING
                     *> check if username and password match any of the accounts in account.txt
-                    MOVE ACCT-USER to MSG
-                    PERFORM WRITE-OUTPUT
-                    MOVE USERNAME to MSG 
-                    PERFORM WRITE-OUTPUT
-                    MOVE ACCT-PASS to MSG
-                    PERFORM WRITE-OUTPUT
-                    MOVE PASSWORD to MSG 
-                    PERFORM WRITE-OUTPUT
                     IF USERNAME = FUNCTION TRIM(ACCT-USER)
                        AND PASSWORD = FUNCTION TRIM(ACCT-PASS)
-                       MOVE "We matched passwords!" to MSG
-                       PERFORM WRITE-OUTPUT
                        MOVE "Y" TO VALID-LOGIN
                        EXIT PERFORM
                     END-IF
