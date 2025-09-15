@@ -4,13 +4,15 @@
        ENVIRONMENT DIVISION. *> big section where we describe our machine environment (files, devices, terminals, etc)
        INPUT-OUTPUT SECTION. *> declare external files -- we tell COBOL what files exist and how we control them
        FILE-CONTROL. *> starts the list of file declarations. we write SELECT statements to connect logical names in our program to actual files on disk
-           SELECT INPUTFILE ASSIGN TO "user_input.txt" *> reads simulated user input (user_input.txt)
+           SELECT INPUTFILE ASSIGN TO "user_input" *> reads simulated user input (user_input.txt)
               ORGANIZATION IS LINE SEQUENTIAL.
            SELECT OUTPUTFILE ASSIGN TO "output_log.txt" *>writes logs (output_log.txt)
               ORGANIZATION IS LINE SEQUENTIAL. *> each record is a line of text
            SELECT ACCOUNTS ASSIGN TO "accounts.txt" *> stores accounts persistently (accounts.txt)
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS ACC-FS. *>gives us a way to check if opening the file succeeded
+           SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
+              ORGANIZATION IS LINE SEQUENTIAL.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -23,7 +25,11 @@
        FD  ACCOUNTS.
        01  ACCT-REC             PIC X(100). *>each line is alphanumeric, 100 characters
 
-       WORKING-STORAGE SECTION. *> defines program variables in memory
+       FD  PROFILE-FILE.
+       01  PF-REC              PIC X(512).
+
+       WORKING-STORAGE SECTION.
+       77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
 
        77  EOF-FLAG             PIC X  VALUE "N". *> END of File flag variable. "N" is the initial value (since we're not at the end of the file) 
@@ -33,7 +39,13 @@
        77  ACCT-COUNT           PIC 9  VALUE 0. *> number of accounts accounts.txt
        77      OPTION-CHOICE         PIC 9  VALUE 0. *> option selection from the user
        77  MSG                  PIC X(100). 
+       77  WS-TEMP    PIC X(10).
+       77  FIELD-LEN PIC 9(4) VALUE ZERO.
 
+
+       77  WS-FILENAME          PIC X(128).
+       77  WS-FIELD             PIC X(400).
+       77  IDX                  PIC 9  VALUE 1.
        *> Fields used when splitting an account line
        77  ACCT-USER            PIC X(20).
        77  ACCT-PASS            PIC X(20).
@@ -109,15 +121,30 @@
                    PERFORM DO-CREATE
                ELSE
                    IF MSG = "STARTOVER"
-                        *> Clear accounts.txt
-                       OPEN OUTPUT ACCOUNTS
+                       *> Ensure file is not open before truncating
                        CLOSE ACCOUNTS
+
+                       *> Truncate accounts.txt (or create empty file)
+                       OPEN OUTPUT ACCOUNTS
                        MOVE "All accounts cleared. Returning to main menu." TO MSG
                        PERFORM WRITE-OUTPUT
-                       PERFORM PROCESS-COMMAND
-                   ELSE
-                      MOVE "Invalid choice, must be LOGIN, CREATE, or STARTOVER" TO MSG
-                      PERFORM WRITE-OUTPUT
+                       IF ACC-FS = "00"
+                          CLOSE ACCOUNTS
+                          OPEN I-O ACCOUNTS
+         
+                          *> Reset in-memory count so logic matches disk
+                          MOVE 0 TO ACCT-COUNT
+                       ELSE
+                          *> Surface the file-status for debugging
+                          STRING "STARTOVER failed. FILE STATUS=" ACC-FS
+                                 DELIMITED BY SIZE INTO MSG
+                          END-STRING
+                          PERFORM WRITE-OUTPUT
+                       END-IF
+                       EXIT PARAGRAPH
+                   ELSE 
+                       MOVE "Invalid Input" to MSG
+                       PERFORM WRITE-OUTPUT
                    END-IF
                END-IF
            END-IF.
@@ -171,14 +198,15 @@
 
        USER-MENU.
         *> three options 
-           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Return" TO MSG
+           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Return" TO MSG
            *> print out the contents of MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
            END-READ
-
+           MOVE OPTION-CHOICE TO MSG 
+           PERFORM WRITE-OUTPUT
            *> function to evaluate the option they choose
            EVALUATE OPTION-CHOICE *> we use the same value for both the overaching options and the skills. no reason to store both at the same time
               WHEN 1
@@ -204,10 +232,10 @@
                  MOVE "Under Construction" TO MSG
                  PERFORM WRITE-OUTPUT
               WHEN 3
-                 *> start over
-                 MOVE "Returning to main menu" TO MSG
-                 PERFORM WRITE-OUTPUT
-              WHEN OTHER
+               PERFORM DO-PROFILE
+            WHEN 4
+               EXIT PARAGRAPH
+            WHEN OTHER
                  MOVE "Invalid option, you must select a number 1-3" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
@@ -304,6 +332,220 @@
            IF HAS-UPPER = "Y" AND HAS-DIGIT = "Y" AND HAS-SPECIAL = "Y"
               MOVE "Y" TO PASSWORD-VALID
            END-IF.
+       DO-PROFILE.
+           *> Build <username>.txt filename in WS-FILENAME
+           MOVE USERNAME TO WS-FILENAME
+           *> Clear the old profile file
+           OPEN OUTPUT PROFILE-FILE
+           CLOSE PROFILE-FILE
+
+             *> Now reopen for writing fresh data
+           OPEN OUTPUT PROFILE-FILE
+
+           *> First Name (required)
+           MOVE "Enter First Name:" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE SPACES TO WS-FIELD
+           PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                 MOVE "First Name is required. Please re-enter:" TO MSG
+                 PERFORM WRITE-OUTPUT
+              END-IF
+           END-PERFORM
+           MOVE SPACES TO PF-REC
+           STRING "First Name: " DELIMITED BY SIZE
+                  WS-FIELD       DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> Last Name (required)
+           MOVE "Enter Last Name:" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE SPACES TO WS-FIELD
+           PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                 MOVE "Last Name is required. Please re-enter:" TO MSG
+                 PERFORM WRITE-OUTPUT
+              END-IF
+           END-PERFORM
+           MOVE SPACES TO PF-REC
+           STRING "Last Name: " DELIMITED BY SIZE
+                  WS-FIELD      DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> University/College (required)
+           MOVE "Enter University/College:" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE SPACES TO WS-FIELD
+           PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                 MOVE "University/College is required. Please re-enter:" TO MSG
+                 PERFORM WRITE-OUTPUT
+              END-IF
+           END-PERFORM
+           MOVE SPACES TO PF-REC
+           STRING "University/College: " DELIMITED BY SIZE
+                  WS-FIELD             DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> Major (required)
+           MOVE "Enter Major:" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE SPACES TO WS-FIELD
+           PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                 MOVE "Major is required. Please re-enter:" TO MSG
+                 PERFORM WRITE-OUTPUT
+              END-IF
+           END-PERFORM
+           MOVE SPACES TO PF-REC
+           STRING "Major: " DELIMITED BY SIZE
+                  WS-FIELD  DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> Graduation Year (required)
+           MOVE "Enter Graduation Year (YYYY):" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE SPACES TO WS-FIELD
+           MOVE "N" TO VALID-YEAR
+           PERFORM UNTIL VALID-YEAR = "Y"
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE FUNCTION LENGTH(FUNCTION TRIM(WS-FIELD TRAILING)) TO FIELD-LEN
+              MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO WS-TEMP
+              IF FUNCTION NUMVAL(WS-TEMP) > 0
+                 AND FIELD-LEN = 4
+                 AND (WS-FIELD(1:2) = "19" OR WS-FIELD(1:2) = "20")
+                 MOVE "Y" TO VALID-YEAR
+              ELSE
+                 MOVE "Graduation year must be a 4-digit year starting with 19 or 20. Please re-enter:" TO MSG
+                 PERFORM WRITE-OUTPUT
+                 MOVE "N" TO VALID-YEAR
+              END-IF
+           END-PERFORM
+           MOVE SPACES TO PF-REC
+           STRING "Graduation Year: " DELIMITED BY SIZE
+                  WS-FIELD          DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> About Me (optional, write even if blank)
+           MOVE "Enter About Me (optional, blank to skip):" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+              NOT AT END MOVE INPUT-REC TO WS-FIELD
+           END-READ
+           MOVE SPACES TO PF-REC
+           STRING "About Me: " DELIMITED BY SIZE
+                  WS-FIELD   DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> Experience (3 entries, always write 4 labeled lines each)
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 3
+              MOVE "Enter Experience Title (blank to skip):" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Experience Title: " DELIMITED BY SIZE
+                     WS-FIELD          DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+
+              MOVE "Enter Company:" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Company: " DELIMITED BY SIZE
+                     WS-FIELD  DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+
+              MOVE "Enter Dates:" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Dates: " DELIMITED BY SIZE
+                     WS-FIELD DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+
+              MOVE "Enter Description (optional):" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Description: " DELIMITED BY SIZE
+                     WS-FIELD     DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+           END-PERFORM
+
+           *> Education (3 entries, always write 3 labeled lines each)
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 3
+              MOVE "Enter Education Degree (blank to skip):" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Education Degree: " DELIMITED BY SIZE
+                     WS-FIELD          DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+
+              MOVE "Enter University:" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Education University: " DELIMITED BY SIZE
+                     WS-FIELD              DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+
+              MOVE "Enter Years Attended:" TO MSG
+              PERFORM WRITE-OUTPUT
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                 NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              MOVE SPACES TO PF-REC
+              STRING "Years Attended: " DELIMITED BY SIZE
+                     WS-FIELD          DELIMITED BY SIZE
+                     INTO PF-REC
+              WRITE PF-REC
+           END-PERFORM
+
+           CLOSE PROFILE-FILE
+           MOVE "Profile saved successfully." TO MSG
+           PERFORM WRITE-OUTPUT
+           PERFORM USER-MENU
+           EXIT PARAGRAPH.
+
 
        WRITE-OUTPUT.
            MOVE MSG TO OUT-REC
