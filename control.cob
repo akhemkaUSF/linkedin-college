@@ -33,6 +33,7 @@
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
 
        77  EOF-FLAG             PIC X  VALUE "N". *> END of File flag variable. "N" is the initial value (since we're not at the end of the file) 
+       77  PROFILE-EOF          PIC X  VALUE "N".
        77  USERNAME             PIC X(20).
        77  PASSWORD             PIC X(20).
        77  VALID-LOGIN          PIC X  VALUE "N". *> password validation. doesn't actually becmoe "Y" until we validate the password
@@ -123,7 +124,6 @@
                    IF MSG = "STARTOVER"
                        *> Ensure file is not open before truncating
                        CLOSE ACCOUNTS
-
                        *> Truncate accounts.txt (or create empty file)
                        OPEN OUTPUT ACCOUNTS
                        MOVE "All accounts cleared. Returning to main menu." TO MSG
@@ -198,7 +198,7 @@
 
        USER-MENU.
         *> three options 
-           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Return" TO MSG
+           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Return" TO MSG
            *> print out the contents of MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
@@ -234,9 +234,16 @@
               WHEN 3
                PERFORM DO-PROFILE
             WHEN 4
+               OPEN INPUT PROFILE-FILE
+               PERFORM WRITE-OUTPUT
+               PERFORM UNTIL PROFILE-EOF = "Y"
+                   PERFORM PRINT-PROFILE
+               END-PERFORM
+               CLOSE PROFILE-FILE
+            WHEN 5
                EXIT PARAGRAPH
             WHEN OTHER
-                 MOVE "Invalid option, you must select a number 1-3" TO MSG
+                 MOVE "Invalid option, you must select a number 1-5" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
 
@@ -546,8 +553,19 @@
            PERFORM USER-MENU
            EXIT PARAGRAPH.
 
+       PRINT-PROFILE.
+             READ PROFILE-FILE
+                 AT END
+                     MOVE "Y" TO PROFILE-EOF
+                 NOT AT END
+                     MOVE FUNCTION TRIM(PF-REC) TO MSG
+                     PERFORM WRITE-OUTPUT
+             END-READ.
 
        WRITE-OUTPUT.
            MOVE MSG TO OUT-REC
            WRITE OUT-REC
            DISPLAY MSG.
+
+       
+
