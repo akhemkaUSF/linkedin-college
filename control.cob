@@ -12,7 +12,8 @@
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS ACC-FS. *>gives us a way to check if opening the file succeeded
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
-              ORGANIZATION IS LINE SEQUENTIAL.
+              ORGANIZATION IS LINE SEQUENTIAL
+              FILE STATUS IS PROFILE-STATUS.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -31,6 +32,7 @@
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
+       77  PROFILE-STATUS               PIC XX VALUE SPACES. 
 
        77  EOF-FLAG             PIC X  VALUE "N". *> END of File flag variable. "N" is the initial value (since we're not at the end of the file) 
        77  PROFILE-EOF          PIC X  VALUE "N".
@@ -241,6 +243,12 @@
             WHEN 4
                MOVE 'N' TO PROFILE-EOF
                OPEN INPUT PROFILE-FILE
+               IF PROFILE-STATUS NOT = "00"
+                  MOVE "PROFILE FILE DOES NOT EXIST." TO MSG
+                  PERFORM WRITE-OUTPUT
+                  PERFORM USER-MENU
+               END-IF
+               MOVE "OUTPUTTING PROFILE..." TO MSG 
                PERFORM WRITE-OUTPUT
                PERFORM UNTIL PROFILE-EOF = "Y"
                    PERFORM PRINT-PROFILE
@@ -582,16 +590,6 @@
            DISPLAY MSG.
 
              *> Add a new menu option for searching profiles
-
-       *> Module to display the complete profile of the logged-in user
-       DISPLAY-PROFILE.
-           OPEN INPUT PROFILE-FILE
-           MOVE "Displaying your profile:" TO MSG
-           PERFORM WRITE-OUTPUT
-           PERFORM UNTIL PROFILE-EOF = "Y"
-               PERFORM PRINT-PROFILE
-           END-PERFORM
-           CLOSE PROFILE-FILE.
 
        *> Module to search for a profile by name
        SEARCH-PROFILE.
