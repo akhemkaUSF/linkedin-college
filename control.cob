@@ -578,5 +578,90 @@
            WRITE OUT-REC
            DISPLAY MSG.
 
+             *> Add a new menu option for searching profiles
+       USER-MENU.
+           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, " -
+           "4=Output Profile, 5=Search Profile, 6=Return" TO MSG
+           PERFORM WRITE-OUTPUT.
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
+           END-READ
+           MOVE OPTION-CHOICE TO MSG 
+           PERFORM WRITE-OUTPUT
+           EVALUATE OPTION-CHOICE
+              WHEN 1
+                 MOVE "Under Construction" TO MSG
+                 PERFORM WRITE-OUTPUT
+              WHEN 2
+                 MOVE "Under Construction" TO MSG
+                 PERFORM WRITE-OUTPUT
+              WHEN 3
+                 PERFORM DO-PROFILE
+              WHEN 4
+                 PERFORM DISPLAY-PROFILE
+              WHEN 5
+                 PERFORM SEARCH-PROFILE
+              WHEN 6
+                 EXIT PARAGRAPH
+              WHEN OTHER
+                 MOVE "Invalid option, you must select a number 1-6" TO MSG
+                 PERFORM WRITE-OUTPUT
+           END-EVALUATE.
+
+       *> Module to display the complete profile of the logged-in user
+       DISPLAY-PROFILE.
+           OPEN INPUT PROFILE-FILE
+           MOVE "Displaying your profile:" TO MSG
+           PERFORM WRITE-OUTPUT
+           PERFORM UNTIL PROFILE-EOF = "Y"
+               PERFORM PRINT-PROFILE
+           END-PERFORM
+           CLOSE PROFILE-FILE.
+
+       *> Module to search for a profile by name
+       SEARCH-PROFILE.
+           MOVE "Enter the full name of the person you are looking for:" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO WS-FIELD
+           END-READ
+
+           MOVE "Searching for profile..." TO MSG
+           PERFORM WRITE-OUTPUT
+
+           *> Open the accounts file to search for the username
+           OPEN INPUT ACCOUNTS
+           MOVE "N" TO VALID-LOGIN
+           PERFORM UNTIL 1=0
+              READ ACCOUNTS NEXT RECORD
+                 AT END EXIT PERFORM
+                 NOT AT END
+                    UNSTRING ACCT-REC
+                       DELIMITED BY ALL " "
+                       INTO ACCT-USER ACCT-PASS
+                    END-UNSTRING
+                    IF WS-FIELD = FUNCTION TRIM(ACCT-USER)
+                       MOVE "Y" TO VALID-LOGIN
+                       EXIT PERFORM
+                    END-IF
+              END-READ
+           END-PERFORM
+           CLOSE ACCOUNTS
+
+           IF VALID-LOGIN = "Y"
+              MOVE WS-FIELD TO WS-FILENAME
+              STRING ".txt" DELIMITED BY SIZE INTO WS-FILENAME
+              OPEN INPUT PROFILE-FILE
+              MOVE "Profile found. Displaying profile:" TO MSG
+              PERFORM WRITE-OUTPUT
+              PERFORM UNTIL PROFILE-EOF = "Y"
+                  PERFORM PRINT-PROFILE
+              END-PERFORM
+              CLOSE PROFILE-FILE
+           ELSE
+              MOVE "Profile not found." TO MSG
+              PERFORM WRITE-OUTPUT
+           END-IF.
+
        
 
