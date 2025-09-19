@@ -1,0 +1,28 @@
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Enter new username:
+Username taken
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Return
+Invalid option, you must select a number 1-3
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
+Invalid choice, must be LOGIN, CREATE, or STARTOVER
+What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.

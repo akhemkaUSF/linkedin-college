@@ -12,7 +12,8 @@
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS ACC-FS. *>gives us a way to check if opening the file succeeded
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
-              ORGANIZATION IS LINE SEQUENTIAL.
+              ORGANIZATION IS LINE SEQUENTIAL
+              FILE STATUS IS PROFILE-STATUS.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -31,6 +32,7 @@
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
+       77  PROFILE-STATUS               PIC XX VALUE SPACES. 
 
        77  EOF-FLAG             PIC X  VALUE "N". *> END of File flag variable. "N" is the initial value (since we're not at the end of the file) 
        77  PROFILE-EOF          PIC X  VALUE "N".
@@ -198,7 +200,7 @@
 
        USER-MENU.
         *> three options 
-           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Return" TO MSG
+           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return" TO MSG
            *> print out the contents of MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
@@ -239,7 +241,14 @@
               WHEN 3
                PERFORM DO-PROFILE
             WHEN 4
+               MOVE 'N' TO PROFILE-EOF
                OPEN INPUT PROFILE-FILE
+               IF PROFILE-STATUS NOT = "00"
+                  MOVE "PROFILE FILE DOES NOT EXIST." TO MSG
+                  PERFORM WRITE-OUTPUT
+                  PERFORM USER-MENU
+               END-IF
+               MOVE "OUTPUTTING PROFILE..." TO MSG 
                PERFORM WRITE-OUTPUT
                PERFORM UNTIL PROFILE-EOF = "Y"
                    PERFORM PRINT-PROFILE
@@ -247,9 +256,11 @@
                CLOSE PROFILE-FILE
                PERFORM USER-MENU
             WHEN 5
-               EXIT PARAGRAPH
-            WHEN OTHER
-                 MOVE "Invalid option, you must select a number 1-5" TO MSG
+                 PERFORM SEARCH-PROFILE
+              WHEN 6
+                 EXIT PARAGRAPH
+              WHEN OTHER
+                 MOVE "Invalid option, you must select a number 1-6" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
 
@@ -577,6 +588,53 @@
            MOVE MSG TO OUT-REC
            WRITE OUT-REC
            DISPLAY MSG.
+
+             *> Add a new menu option for searching profiles
+
+       *> Module to search for a profile by name
+       SEARCH-PROFILE.
+           MOVE "Enter the full name of the person you are looking for:" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO WS-FIELD
+           END-READ
+
+           MOVE "Searching for profile..." TO MSG
+           PERFORM WRITE-OUTPUT
+
+           *> Open the accounts file to search for the username
+           OPEN INPUT ACCOUNTS
+           MOVE "N" TO VALID-LOGIN
+           PERFORM UNTIL 1=0
+              READ ACCOUNTS NEXT RECORD
+                 AT END EXIT PERFORM
+                 NOT AT END
+                    UNSTRING ACCT-REC
+                       DELIMITED BY ALL " "
+                       INTO ACCT-USER ACCT-PASS
+                    END-UNSTRING
+                    IF WS-FIELD = FUNCTION TRIM(ACCT-USER)
+                       MOVE "Y" TO VALID-LOGIN
+                       EXIT PERFORM
+                    END-IF
+              END-READ
+           END-PERFORM
+           CLOSE ACCOUNTS
+
+           IF VALID-LOGIN = "Y"
+              MOVE WS-FIELD TO WS-FILENAME
+              OPEN INPUT PROFILE-FILE
+              MOVE "Profile found. Displaying profile:" TO MSG
+              MOVE 'N' TO PROFILE-EOF
+              PERFORM WRITE-OUTPUT
+              PERFORM UNTIL PROFILE-EOF = "Y"
+                  PERFORM PRINT-PROFILE
+              END-PERFORM
+              CLOSE PROFILE-FILE
+           ELSE
+              MOVE "Profile not found." TO MSG
+              PERFORM WRITE-OUTPUT
+           END-IF.
 
        
 
