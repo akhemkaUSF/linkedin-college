@@ -239,6 +239,7 @@
               WHEN 3
                PERFORM DO-PROFILE
             WHEN 4
+               MOVE 'N' TO PROFILE-EOF
                OPEN INPUT PROFILE-FILE
                PERFORM WRITE-OUTPUT
                PERFORM UNTIL PROFILE-EOF = "Y"
@@ -626,6 +627,7 @@
               MOVE WS-FIELD TO WS-FILENAME
               OPEN INPUT PROFILE-FILE
               MOVE "Profile found. Displaying profile:" TO MSG
+              MOVE 'N' TO PROFILE-EOF
               PERFORM WRITE-OUTPUT
               PERFORM UNTIL PROFILE-EOF = "Y"
                   PERFORM PRINT-PROFILE
