@@ -245,6 +245,7 @@
                    PERFORM PRINT-PROFILE
                END-PERFORM
                CLOSE PROFILE-FILE
+               PERFORM USER-MENU
             WHEN 5
                EXIT PARAGRAPH
             WHEN OTHER
