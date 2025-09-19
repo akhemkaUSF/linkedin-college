@@ -580,8 +580,7 @@
 
              *> Add a new menu option for searching profiles
        USER-MENU.
-           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, " -
-           "4=Output Profile, 5=Search Profile, 6=Return" TO MSG
+           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, "4=Output Profile, 5=Search Profile, 6=Return" TO MSG
            PERFORM WRITE-OUTPUT.
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
@@ -650,7 +649,6 @@
 
            IF VALID-LOGIN = "Y"
               MOVE WS-FIELD TO WS-FILENAME
-              STRING ".txt" DELIMITED BY SIZE INTO WS-FILENAME
               OPEN INPUT PROFILE-FILE
               MOVE "Profile found. Displaying profile:" TO MSG
               PERFORM WRITE-OUTPUT
