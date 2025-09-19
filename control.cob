@@ -212,6 +212,11 @@
               WHEN 1
                  MOVE "Under Construction" TO MSG
                  PERFORM WRITE-OUTPUT
+
+              *> add an option prompting them to find someone they know,
+              *> and then perform the search function
+
+
               WHEN 2
               *> lists the skills we actually want to select
                  MOVE "Pick a skill (1-5)" TO MSG
@@ -561,6 +566,11 @@
                      MOVE FUNCTION TRIM(PF-REC) TO MSG
                      PERFORM WRITE-OUTPUT
              END-READ.
+
+       *> add a function to search for the profile 
+       *> check if the profile file exists that we're searching for 
+       *> if the profiel exists, you just move that value to the variable
+       *> profile-file and you perform print-profile
 
        WRITE-OUTPUT.
            MOVE MSG TO OUT-REC
