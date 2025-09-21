@@ -247,16 +247,18 @@
                   MOVE "PROFILE FILE DOES NOT EXIST." TO MSG
                   PERFORM WRITE-OUTPUT
                   PERFORM USER-MENU
+               ELSE
+                   MOVE "OUTPUTTING PROFILE..." TO MSG 
+                   PERFORM WRITE-OUTPUT
+                   PERFORM UNTIL PROFILE-EOF = "Y"
+                       PERFORM PRINT-PROFILE
+                   END-PERFORM
+                   CLOSE PROFILE-FILE
+                   PERFORM USER-MENU
                END-IF
-               MOVE "OUTPUTTING PROFILE..." TO MSG 
-               PERFORM WRITE-OUTPUT
-               PERFORM UNTIL PROFILE-EOF = "Y"
-                   PERFORM PRINT-PROFILE
-               END-PERFORM
-               CLOSE PROFILE-FILE
-               PERFORM USER-MENU
             WHEN 5
                  PERFORM SEARCH-PROFILE
+                 PERFORM USER-MENU
               WHEN 6
                  EXIT PARAGRAPH
               WHEN OTHER
@@ -593,7 +595,7 @@
 
        *> Module to search for a profile by name
        SEARCH-PROFILE.
-           MOVE "Enter the full name of the person you are looking for:" TO MSG
+           MOVE "Enter the username of the person you are looking for:" TO MSG
            PERFORM WRITE-OUTPUT
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO WS-FIELD
