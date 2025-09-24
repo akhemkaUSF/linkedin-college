@@ -44,7 +44,7 @@
        77  VALID-LOGIN          PIC X  VALUE "N". *> password validation. doesn't actually becmoe "Y" until we validate the password
        77  ACCT-COUNT           PIC 9  VALUE 0. *> number of accounts accounts.txt
        77      OPTION-CHOICE         PIC 9  VALUE 0. *> option selection from the user
-       77  MSG                  PIC X(100). 
+       77  MSG                  PIC X(150). 
        77  WS-TEMP    PIC X(10).
        77  FIELD-LEN PIC 9(4) VALUE ZERO.
 
