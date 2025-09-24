@@ -34,6 +34,9 @@
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
        77  PROFILE-STATUS               PIC XX VALUE SPACES. 
 
+       77  FIRST-NAME           PIC X(50).
+       77  LAST-NAME            PIC X(50).
+
        77  EOF-FLAG             PIC X  VALUE "N". *> END of File flag variable. "N" is the initial value (since we're not at the end of the file) 
        77  PROFILE-EOF          PIC X  VALUE "N".
        77  USERNAME             PIC X(20).
@@ -47,7 +50,7 @@
 
 
        77  WS-FILENAME          PIC X(128).
-       77  WS-FIELD             PIC X(400).
+       77  WS-FIELD             PIC X(5000).
        77  IDX                  PIC 9  VALUE 1.
        *> Fields used when splitting an account line
        77  ACCT-USER            PIC X(20).
@@ -359,16 +362,7 @@
               MOVE "Y" TO PASSWORD-VALID
            END-IF.
        DO-PROFILE.
-           *> Build <username>.txt filename in WS-FILENAME
-           MOVE USERNAME TO WS-FILENAME
-           *> Clear the old profile file
-           OPEN OUTPUT PROFILE-FILE
-           CLOSE PROFILE-FILE
-
-             *> Now reopen for writing fresh data
-           OPEN OUTPUT PROFILE-FILE
-
-           *> First Name (required)
+           *> First Name (required) - collect before creating file
            MOVE "Enter First Name:" TO MSG
            PERFORM WRITE-OUTPUT
            MOVE SPACES TO WS-FIELD
@@ -381,13 +375,9 @@
                  PERFORM WRITE-OUTPUT
               END-IF
            END-PERFORM
-           MOVE SPACES TO PF-REC
-           STRING "First Name: " DELIMITED BY SIZE
-                  WS-FIELD       DELIMITED BY SIZE
-                  INTO PF-REC
-           WRITE PF-REC
+           MOVE FUNCTION TRIM(WS-FIELD) TO FIRST-NAME
 
-           *> Last Name (required)
+           *> Last Name (required) - collect before creating file
            MOVE "Enter Last Name:" TO MSG
            PERFORM WRITE-OUTPUT
            MOVE SPACES TO WS-FIELD
@@ -400,12 +390,38 @@
                  PERFORM WRITE-OUTPUT
               END-IF
            END-PERFORM
+           MOVE FUNCTION TRIM(WS-FIELD) TO LAST-NAME
+
+           *> Build filename using First_Last format
+           MOVE SPACES TO WS-FILENAME
+           STRING FUNCTION TRIM(FIRST-NAME) DELIMITED BY SIZE
+                  "_"                       DELIMITED BY SIZE
+                  FUNCTION TRIM(LAST-NAME)  DELIMITED BY SIZE
+                  INTO WS-FILENAME
+           END-STRING
+
+           *> Clear the old profile file
+           OPEN OUTPUT PROFILE-FILE
+           CLOSE PROFILE-FILE
+
+           *> Now reopen for writing fresh data
+           OPEN OUTPUT PROFILE-FILE
+
+           *> Write First Name to file (already collected)
            MOVE SPACES TO PF-REC
-           STRING "Last Name: " DELIMITED BY SIZE
-                  WS-FIELD      DELIMITED BY SIZE
+           STRING "First Name: " DELIMITED BY SIZE
+                  FIRST-NAME     DELIMITED BY SIZE
                   INTO PF-REC
            WRITE PF-REC
 
+           *> Write Last Name to file (already collected)
+           MOVE SPACES TO PF-REC
+           STRING "Last Name: " DELIMITED BY SIZE
+                  LAST-NAME     DELIMITED BY SIZE
+                  INTO PF-REC
+           WRITE PF-REC
+
+           *> Continue with the rest of the profile fields...
            *> University/College (required)
            MOVE "Enter University/College:" TO MSG
            PERFORM WRITE-OUTPUT
@@ -595,7 +611,7 @@
 
        *> Module to search for a profile by name
        SEARCH-PROFILE.
-           MOVE "Enter the username of the person you are looking for:" TO MSG
+           MOVE "Enter the full name of the person you are looking for:" TO MSG
            PERFORM WRITE-OUTPUT
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO WS-FIELD
