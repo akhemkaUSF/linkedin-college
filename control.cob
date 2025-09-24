@@ -221,7 +221,6 @@
               *> add an option prompting them to find someone they know,
               *> and then perform the search function
 
-
               WHEN 2
               *> lists the skills we actually want to select
                  MOVE "Pick a skill (1-5)" TO MSG
@@ -634,7 +633,6 @@
 
 
            MOVE WS-FILENAME TO MSG
-           PERFORM WRITE-OUTPUT
 
            *> Try to open the profile file directly using the converted filename
            MOVE 'N' TO PROFILE-EOF
