@@ -620,30 +620,27 @@
            MOVE "Searching for profile..." TO MSG
            PERFORM WRITE-OUTPUT
 
-           *> Open the accounts file to search for the username
-           OPEN INPUT ACCOUNTS
-           MOVE "N" TO VALID-LOGIN
-           PERFORM UNTIL 1=0
-              READ ACCOUNTS NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING ACCT-REC
-                       DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF WS-FIELD = FUNCTION TRIM(ACCT-USER)
-                       MOVE "Y" TO VALID-LOGIN
-                       EXIT PERFORM
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE ACCOUNTS
+           *> Convert the input name to filename format (First_Last)
+           *> Replace spaces with underscores for filename
+           MOVE SPACES TO WS-FILENAME
+           MOVE WS-FIELD TO MSG
+           PERFORM WRITE-OUTPUT
 
-           IF VALID-LOGIN = "Y"
-              MOVE WS-FIELD TO WS-FILENAME
-              OPEN INPUT PROFILE-FILE
+
+           MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO WS-FILENAME
+
+           INSPECT WS-FILENAME
+               REPLACING FIRST " " BY "_"
+
+
+           MOVE WS-FILENAME TO MSG
+           PERFORM WRITE-OUTPUT
+
+           *> Try to open the profile file directly using the converted filename
+           MOVE 'N' TO PROFILE-EOF
+           OPEN INPUT PROFILE-FILE
+           IF PROFILE-STATUS = "00"
               MOVE "Profile found. Displaying profile:" TO MSG
-              MOVE 'N' TO PROFILE-EOF
               PERFORM WRITE-OUTPUT
               PERFORM UNTIL PROFILE-EOF = "Y"
                   PERFORM PRINT-PROFILE
@@ -652,7 +649,6 @@
            ELSE
               MOVE "Profile not found." TO MSG
               PERFORM WRITE-OUTPUT
-           END-IF.
-
+           END-IF
        
 
