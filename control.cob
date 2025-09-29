@@ -14,6 +14,9 @@
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PROFILE-STATUS.
+           SELECT CONNECTIONS ASSIGN TO "connections.txt" *> stores pending connection requests
+              ORGANIZATION IS LINE SEQUENTIAL
+              FILE STATUS IS CONNECTIONS-FS.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -28,6 +31,11 @@
 
        FD  PROFILE-FILE.
        01  PF-REC              PIC X(512).
+
+       FD  CONNECTIONS.
+       01  CONNECTION-REC.
+       05  SENDER-USERNAME       PIC X(20).
+       05  RECIPIENT-USERNAME    PIC X(20).
 
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
@@ -55,6 +63,11 @@
        *> Fields used when splitting an account line
        77  ACCT-USER            PIC X(20).
        77  ACCT-PASS            PIC X(20).
+
+       77 CONNECTIONS-FS            PIC XX VALUE SPACES.
+       77 CONNECTION-SENDER         PIC X(20).
+       77 CONNECTION-RECIPIENT      PIC X(20).
+       77 CONNECTION-FOUND          PIC X VALUE "N". 
 
        *> Password validation helpers
        77  PASSWORD-LEN         PIC 99.
