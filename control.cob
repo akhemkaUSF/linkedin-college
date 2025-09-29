@@ -676,7 +676,7 @@
            ELSE
               MOVE "Profile not found." TO MSG
               PERFORM WRITE-OUTPUT
-           END-IF
+           END-IF.
        SEND-CONNECTION-REQUEST.
            MOVE "Enter the username of the person you want to connect with:" TO MSG
            PERFORM WRITE-OUTPUT
