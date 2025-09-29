@@ -14,6 +14,9 @@
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PROFILE-STATUS.
+           SELECT CONNECTIONS ASSIGN TO "connections.txt" *> stores pending connection requests
+              ORGANIZATION IS LINE SEQUENTIAL
+              FILE STATUS IS CONNECTIONS-FS.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -28,6 +31,11 @@
 
        FD  PROFILE-FILE.
        01  PF-REC              PIC X(512).
+
+       FD  CONNECTIONS.
+       01  CONNECTION-REC.
+       05  SENDER-USERNAME       PIC X(20).
+       05  RECIPIENT-USERNAME    PIC X(20).
 
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
@@ -55,6 +63,11 @@
        *> Fields used when splitting an account line
        77  ACCT-USER            PIC X(20).
        77  ACCT-PASS            PIC X(20).
+
+       77 CONNECTIONS-FS            PIC XX VALUE SPACES.
+       77 CONNECTION-SENDER         PIC X(20).
+       77 CONNECTION-RECIPIENT      PIC X(20).
+       77 CONNECTION-FOUND          PIC X VALUE "N". 
 
        *> Password validation helpers
        77  PASSWORD-LEN         PIC 99.
@@ -203,7 +216,7 @@
 
        USER-MENU.
         *> three options 
-           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return" TO MSG
+           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile , 6= Send connection request, 7= View Connection request, 8= Return" TO MSG
            *> print out the contents of MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
@@ -261,8 +274,12 @@
             WHEN 5
                  PERFORM SEARCH-PROFILE
                  PERFORM USER-MENU
-              WHEN 6
-                 EXIT PARAGRAPH
+            WHEN 6
+               PERFORM SEND-CONNECTION-REQUEST
+            WHEN 7
+               PERFORM VIEW-PENDING-REQUESTS
+            WHEN 8
+               EXIT PARAGRAPH
               WHEN OTHER
                  MOVE "Invalid option, you must select a number 1-6" TO MSG
                  PERFORM WRITE-OUTPUT
@@ -644,8 +661,74 @@
                   PERFORM PRINT-PROFILE
               END-PERFORM
               CLOSE PROFILE-FILE
+          *> Prompt to send a connection request
+          MOVE "Would you like to send a connection request to this user? (Y/N):" TO MSG
+          PERFORM WRITE-OUTPUT
+          READ INPUTFILE AT END MOVE "N" TO WS-FIELD
+            NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO WS-FIELD
+         END-READ
+         IF WS-FIELD = "Y"
+            PERFORM SEND-CONNECTION-REQUEST
+         END-IF
+
            ELSE
               MOVE "Profile not found." TO MSG
               PERFORM WRITE-OUTPUT
            END-IF
-       
+       SEND-CONNECTION-REQUEST.
+           MOVE "Enter the username of the person you want to connect with:" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO CONNECTION-RECIPIENT
+           END-READ
+
+           *> Validate the request
+           MOVE "N" TO CONNECTION-FOUND
+           OPEN INPUT CONNECTIONS
+           PERFORM UNTIL CONNECTION-FOUND = "Y" OR CONNECTIONS-FS = "10"
+               READ CONNECTIONS NEXT RECORD
+                   AT END EXIT PERFORM
+                   NOT AT END
+                       IF (SENDER-USERNAME = CONNECTION-SENDER AND RECIPIENT-USERNAME = CONNECTION-RECIPIENT) OR
+                          (SENDER-USERNAME = CONNECTION-RECIPIENT AND RECIPIENT-USERNAME = CONNECTION-SENDER)
+                          MOVE "Y" TO CONNECTION-FOUND
+                       END-IF
+               END-READ
+           END-PERFORM
+           CLOSE CONNECTIONS
+
+           IF CONNECTION-FOUND = "Y"
+               MOVE "You are already connected with this user or a request is pending." TO MSG
+               PERFORM WRITE-OUTPUT
+               EXIT PARAGRAPH
+           END-IF
+           
+           *> Write the new connection request
+           OPEN EXTEND CONNECTIONS
+           MOVE SENDER-USERNAME TO CONNECTION-SENDER
+           MOVE CONNECTION-RECIPIENT TO RECIPIENT-USERNAME
+           WRITE CONNECTION-REC
+           CLOSE CONNECTIONS
+
+           MOVE "Connection request sent successfully." TO MSG
+           PERFORM WRITE-OUTPUT.
+      VIEW-PENDING-REQUESTS.
+    MOVE "Pending connection requests:" TO MSG
+    PERFORM WRITE-OUTPUT
+
+    OPEN INPUT CONNECTIONS
+    PERFORM UNTIL CONNECTIONS-FS = "10"
+        READ CONNECTIONS NEXT RECORD
+            AT END EXIT PERFORM
+            NOT AT END
+                IF RECIPIENT-USERNAME = SENDER-USERNAME
+                    MOVE "Request from: " TO MSG
+                    STRING MSG DELIMITED BY SIZE
+                           CONNECTION-SENDER DELIMITED BY SIZE
+                           INTO MSG
+                    PERFORM WRITE-OUTPUT
+                END-IF
+        END-READ
+    END-PERFORM
+    CLOSE CONNECTIONS.
+      
