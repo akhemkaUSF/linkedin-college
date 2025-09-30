@@ -676,17 +676,22 @@
            ELSE
               MOVE "Profile not found." TO MSG
               PERFORM WRITE-OUTPUT
-           END-IF
+           END-IF.
        SEND-CONNECTION-REQUEST.
            MOVE "Enter the username of the person you want to connect with:" TO MSG
            PERFORM WRITE-OUTPUT
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO CONNECTION-RECIPIENT
+              MOVE CONNECTION-RECIPIENT TO MSG
+              PERFORM WRITE-OUTPUT
            END-READ
+
+           MOVE WS-FIELD TO MSG
+           PERFORM WRITE-OUTPUT
 
            *> Validate the request
            MOVE "N" TO CONNECTION-FOUND
-           OPEN INPUT CONNECTIONS
+              OPEN INPUT CONNECTIONS
            PERFORM UNTIL CONNECTION-FOUND = "Y" OR CONNECTIONS-FS = "10"
                READ CONNECTIONS NEXT RECORD
                    AT END EXIT PERFORM
@@ -706,7 +711,7 @@
            END-IF
            
            *> Write the new connection request
-           OPEN EXTEND CONNECTIONS
+           OPEN OUTPUT CONNECTIONS
            MOVE SENDER-USERNAME TO CONNECTION-SENDER
            MOVE CONNECTION-RECIPIENT TO RECIPIENT-USERNAME
            WRITE CONNECTION-REC
@@ -714,23 +719,24 @@
 
            MOVE "Connection request sent successfully." TO MSG
            PERFORM WRITE-OUTPUT.
-      VIEW-PENDING-REQUESTS.
-    MOVE "Pending connection requests:" TO MSG
-    PERFORM WRITE-OUTPUT
+          VIEW-PENDING-REQUESTS.
+          MOVE "Pending connection requests:" TO MSG
+          PERFORM WRITE-OUTPUT
 
-    OPEN INPUT CONNECTIONS
-    PERFORM UNTIL CONNECTIONS-FS = "10"
-        READ CONNECTIONS NEXT RECORD
-            AT END EXIT PERFORM
-            NOT AT END
-                IF RECIPIENT-USERNAME = SENDER-USERNAME
-                    MOVE "Request from: " TO MSG
-                    STRING MSG DELIMITED BY SIZE
-                           CONNECTION-SENDER DELIMITED BY SIZE
-                           INTO MSG
-                    PERFORM WRITE-OUTPUT
-                END-IF
-        END-READ
-    END-PERFORM
-    CLOSE CONNECTIONS.
+          OPEN INPUT CONNECTIONS
+          PERFORM UNTIL CONNECTIONS-FS = "10"
+              READ CONNECTIONS NEXT RECORD
+                  AT END EXIT PERFORM
+                  NOT AT END
+                      IF RECIPIENT-USERNAME = SENDER-USERNAME
+                          MOVE "Request from: " TO MSG
+                          STRING MSG DELIMITED BY SIZE
+                                 CONNECTION-SENDER DELIMITED BY SIZE
+                                 INTO MSG
+                          PERFORM WRITE-OUTPUT
+                      END-IF
+              END-READ
+          END-PERFORM
+          CLOSE CONNECTIONS.
+
       
