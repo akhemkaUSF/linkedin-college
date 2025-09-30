@@ -1,1 +1,2 @@
-alice Password1!
+secretcliff Password1!
+newaccount Password1!

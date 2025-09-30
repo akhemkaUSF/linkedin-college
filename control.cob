@@ -81,6 +81,7 @@
        MAIN-PARA. *> main entry point
            OPEN INPUT INPUTFILE *> opens input file
            OPEN OUTPUT OUTPUTFILE *> opens output file 
+           OPEN OUTPUT CONNECTIONS
 
            *> Try opening ACCOUNTS for I-O; if it doesn't exist, create it
            OPEN I-O ACCOUNTS
@@ -101,6 +102,7 @@
            CLOSE INPUTFILE 
            CLOSE OUTPUTFILE
            CLOSE ACCOUNTS
+           CLOSE CONNECTIONS
            STOP RUN.
 
        
@@ -678,8 +680,6 @@
               PERFORM WRITE-OUTPUT
            END-IF.
        SEND-CONNECTION-REQUEST.
-           MOVE "Enter the username of the person you want to connect with:" TO MSG
-           PERFORM WRITE-OUTPUT
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO CONNECTION-RECIPIENT
               MOVE CONNECTION-RECIPIENT TO MSG
