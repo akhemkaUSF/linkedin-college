@@ -680,6 +680,7 @@
               PERFORM WRITE-OUTPUT
            END-IF.
        SEND-CONNECTION-REQUEST.
+           MOVE USERNAME TO SENDER-USERNAME *> Assign the logged-in user's username
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO CONNECTION-RECIPIENT
               MOVE CONNECTION-RECIPIENT TO MSG
@@ -711,9 +712,11 @@
            END-IF
            
            *> Write the new connection request
-           OPEN OUTPUT CONNECTIONS
+           OPEN EXTEND CONNECTIONS
            MOVE SENDER-USERNAME TO CONNECTION-SENDER
            MOVE CONNECTION-RECIPIENT TO RECIPIENT-USERNAME
+           MOVE CONNECTION-SENDER TO CONNECTION-REC(1:20) *> Populate the record
+           MOVE RECIPIENT-USERNAME TO CONNECTION-REC(21:20) *> Populate the record
            WRITE CONNECTION-REC
            CLOSE CONNECTIONS
 
