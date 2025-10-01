@@ -1,28 +1,287 @@
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Enter new username:
-Username taken
+All data cleared (accounts, connections, network).
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter new username:
+Enter password:
+Account created successfully. Please select LOGIN from the menu to sign in.
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
 Enter username:
 Enter password:
 You have successfully logged in
-Choose: 1=Search job, 2=Learn skill, 3=Return
-Invalid option, you must select a number 1-3
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+3
+Enter First Name:
+Enter Last Name:
+Enter University/College:
+Enter Major:
+Enter Graduation Year (YYYY):
+Enter About Me (optional, blank to skip):
+Enter Experience Title (blank to skip):
+Enter Company:
+Enter Dates:
+Enter Description (optional):
+Enter Experience Title (blank to skip):
+Enter Company:
+Enter Dates:
+Enter Description (optional):
+Enter Experience Title (blank to skip):
+Enter Company:
+Enter Dates:
+Enter Description (optional):
+Enter Education Degree (blank to skip):
+Enter University:
+Enter Years Attended:
+Enter Education Degree (blank to skip):
+Enter University:
+Enter Years Attended:
+Enter Education Degree (blank to skip):
+Enter University:
+Enter Years Attended:
+Profile saved successfully.
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter new username:
+Enter password:
+Account created successfully. Please select LOGIN from the menu to sign in.
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+3
+Enter First Name:
+Enter Last Name:
+Enter University/College:
+Enter Major:
+Enter Graduation Year (YYYY):
+Enter About Me (optional, blank to skip):
+Enter Experience Title (blank to skip):
+Enter Company:
+Enter Dates:
+Enter Description (optional):
+Enter Experience Title (blank to skip):
+Enter Company:
+Enter Dates:
+Enter Description (optional):
+Enter Experience Title (blank to skip):
+Enter Company:
+Enter Dates:
+Enter Description (optional):
+Enter Education Degree (blank to skip):
+Enter University:
+Enter Years Attended:
+Enter Education Degree (blank to skip):
+Enter University:
+Enter Years Attended:
+Enter Education Degree (blank to skip):
+Enter University:
+Enter Years Attended:
+Profile saved successfully.
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+5
+Enter the full name of the person you are looking for:
+Searching for profile...
+John Smith
+Profile found. Displaying profile:
+First Name: John
+Last Name: Smith
+University/College: New York University
+Major: Business Administration
+Graduation Year: 2024
+About Me: Future business leader with a focus on marketing strategy, entrepreneurship, and global trade.
+Experience Title: Marketing Intern
+Company: PepsiCo
+Dates: 2023
+Description: Supported digital marketing campaigns, analyzed consumer trends, and presented reports to managers.
+Experience Title: Sales Associate
+Company: Retail Solutions Inc.
+Dates: 2021–2022
+Description: Maintained client relationships, exceeded sales targets, and trained new team members.
+Experience Title: Event Coordinator
+Company: Campus Business Club
+Dates: 2020–2021
+Description: Organized networking events and managed sponsorships with local companies.
+Education Degree: Bachelor of Science
+Education University: New York University
+Years Attended: 2020–2024
+Education Degree: High School Diploma
+Education University: Roosevelt High School
+Years Attended: 2016–2020
+Education Degree: Certificate in Digital Marketing
+Education University: LinkedIn Learning
+Years Attended: 2026
+Connections:
+Send a connection request to this user? (Y/N):
+Connection request sent.
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+4
+OUTPUTTING PROFILE...
+First Name: Emily
+Last Name: Johnson
+University/College: University of California, Berkeley
+Major: Computer Science
+Graduation Year: 2023
+About Me: Software engineer passionate about AI, machine learning, and scalable systems.
+Experience Title: Software Engineering Intern
+Company: Google
+Dates: 2022
+Description: Worked on backend services for cloud infrastructure and improved system performance by 15%.
+Experience Title: Teaching Assistant
+Company: UC Berkeley
+Dates: 2021–2022
+Description: Assisted in teaching data structures and algorithms, graded assignments, and held office hours.
+Experience Title: Open Source Contributor
+Company: GitHub Projects
+Dates: 2020–2021
+Description: Contributed bug fixes and new features to widely used open-source libraries.
+Education Degree: Bachelor of Science
+Education University: University of California, Berkeley
+Years Attended: 2019–2023
+Education Degree: High School Diploma
+Education University: San Francisco High School
+Years Attended: 2015–2019
+Education Degree: Certificate in Machine Learning
+Education University: Coursera
+Years Attended: 2022
+Connections:
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+4
+OUTPUTTING PROFILE...
+First Name: Emily
+Last Name: Johnson
+University/College: University of California, Berkeley
+Major: Computer Science
+Graduation Year: 2023
+About Me: Software engineer passionate about AI, machine learning, and scalable systems.
+Experience Title: Software Engineering Intern
+Company: Google
+Dates: 2022
+Description: Worked on backend services for cloud infrastructure and improved system performance by 15%.
+Experience Title: Teaching Assistant
+Company: UC Berkeley
+Dates: 2021–2022
+Description: Assisted in teaching data structures and algorithms, graded assignments, and held office hours.
+Experience Title: Open Source Contributor
+Company: GitHub Projects
+Dates: 2020–2021
+Description: Contributed bug fixes and new features to widely used open-source libraries.
+Education Degree: Bachelor of Science
+Education University: University of California, Berkeley
+Years Attended: 2019–2023
+Education Degree: High School Diploma
+Education University: San Francisco High School
+Years Attended: 2015–2019
+Education Degree: Certificate in Machine Learning
+Education University: Coursera
+Years Attended: 2022
+Connections:
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+7
+Your pending connection requests:
+Request from: Emily225
+Accept this request?  Y = Yes,  N = No,  Enter = Finish
+Connection accepted.
+(none)
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+4
+OUTPUTTING PROFILE...
+First Name: Emily
+Last Name: Johnson
+University/College: University of California, Berkeley
+Major: Computer Science
+Graduation Year: 2023
+About Me: Software engineer passionate about AI, machine learning, and scalable systems.
+Experience Title: Software Engineering Intern
+Company: Google
+Dates: 2022
+Description: Worked on backend services for cloud infrastructure and improved system performance by 15%.
+Experience Title: Teaching Assistant
+Company: UC Berkeley
+Dates: 2021–2022
+Description: Assisted in teaching data structures and algorithms, graded assignments, and held office hours.
+Experience Title: Open Source Contributor
+Company: GitHub Projects
+Dates: 2020–2021
+Description: Contributed bug fixes and new features to widely used open-source libraries.
+Education Degree: Bachelor of Science
+Education University: University of California, Berkeley
+Years Attended: 2019–2023
+Education Degree: High School Diploma
+Education University: San Francisco High School
+Years Attended: 2015–2019
+Education Degree: Certificate in Machine Learning
+Education University: Coursera
+Years Attended: 2022
+Connections:
+Emily Johnson
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
-What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
-Invalid choice, must be LOGIN, CREATE, or STARTOVER
+Enter username:
+Enter password:
+You have successfully logged in
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+5
+Enter the full name of the person you are looking for:
+Searching for profile...
+John Smith
+Profile found. Displaying profile:
+First Name: John
+Last Name: Smith
+University/College: New York University
+Major: Business Administration
+Graduation Year: 2024
+About Me: Future business leader with a focus on marketing strategy, entrepreneurship, and global trade.
+Experience Title: Marketing Intern
+Company: PepsiCo
+Dates: 2023
+Description: Supported digital marketing campaigns, analyzed consumer trends, and presented reports to managers.
+Experience Title: Sales Associate
+Company: Retail Solutions Inc.
+Dates: 2021–2022
+Description: Maintained client relationships, exceeded sales targets, and trained new team members.
+Experience Title: Event Coordinator
+Company: Campus Business Club
+Dates: 2020–2021
+Description: Organized networking events and managed sponsorships with local companies.
+Education Degree: Bachelor of Science
+Education University: New York University
+Years Attended: 2020–2024
+Education Degree: High School Diploma
+Education University: Roosevelt High School
+Years Attended: 2016–2020
+Education Degree: Certificate in Digital Marketing
+Education University: LinkedIn Learning
+Years Attended: 2026
+Connections:
+Emily Johnson
+Send a connection request to this user? (Y/N):
+You are already connected with this user.
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pend
+6
 What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account.
