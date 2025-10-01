@@ -25,6 +25,10 @@
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS TMP-FS.
 
+           SELECT PROFILES-INDEX ASSIGN TO "profiles.idx"
+              ORGANIZATION IS LINE SEQUENTIAL
+              FILE STATUS IS PRO-FS.
+
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
        FD  INPUTFILE. *> FD is a file description. Marks the start of a record layout for a file we declared earlier in the FILE-CONTROL section
@@ -48,6 +52,9 @@
        FD  CONN-TMP.
        01  TMP-REC            PIC X(100).
 
+       FD  PROFILES-INDEX.
+       01  PRF-REC            PIC X(120).
+
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
@@ -55,6 +62,7 @@
        77  CONN-FS             PIC XX VALUE SPACES.
        77  NET-FS             PIC XX VALUE SPACES.
        77  TMP-FS             PIC XX VALUE SPACES.
+       77  PRO-FS             PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
@@ -104,6 +112,13 @@
        77  CONN-ANY            PIC X  VALUE "N".
        77  PARAM-USER          PIC X(20).
 
+       77  LK-FIRST-NAME      PIC X(50).
+       77  LK-LAST-NAME       PIC X(50).
+       77  IDX-USER           PIC X(20).
+       77  IDX-FN             PIC X(50).
+       77  IDX-LN             PIC X(50).
+       77  NAME-FOUND         PIC X  VALUE "N".
+
        PROCEDURE DIVISION. *> equivalent of the main function in other languages 
        MAIN-PARA. *> main entry point
            OPEN INPUT INPUTFILE *> opens input file
@@ -138,6 +153,16 @@
 
            *> Ensure CONN-TMP is closed/clean (will be created on demand)
            CLOSE CONN-TMP
+
+           *> Ensure PROFILES-INDEX file exists
+           OPEN I-O PROFILES-INDEX
+           IF PRO-FS NOT = "00"
+              CLOSE PROFILES-INDEX
+              OPEN OUTPUT PROFILES-INDEX
+              CLOSE PROFILES-INDEX
+              OPEN I-O PROFILES-INDEX
+           END-IF
+           CLOSE PROFILES-INDEX
 
            PERFORM LOAD-ACCOUNTS *> count number of accounts in the file
 
@@ -227,6 +252,13 @@
 
            *> Reset derived in-memory counters/flags
            MOVE 0 TO ACCT-COUNT
+
+           *> PROFILES-INDEX
+           CLOSE PROFILES-INDEX
+           OPEN OUTPUT PROFILES-INDEX
+           IF PRO-FS = "00"
+              CLOSE PROFILES-INDEX
+           END-IF
 
            MOVE "All data cleared (accounts, connections, network)." TO MSG
            PERFORM WRITE-OUTPUT
@@ -485,6 +517,23 @@
            *> Clear the old profile file
            OPEN OUTPUT PROFILE-FILE
            CLOSE PROFILE-FILE
+
+           *> Update profiles index (username -> first/last)
+           MOVE FUNCTION TRIM(FIRST-NAME) TO LK-FIRST-NAME
+           MOVE FUNCTION TRIM(LAST-NAME)  TO LK-LAST-NAME
+           INSPECT LK-FIRST-NAME REPLACING ALL " " BY "_"
+           INSPECT LK-LAST-NAME  REPLACING ALL " " BY "_"
+           OPEN EXTEND PROFILES-INDEX
+           MOVE SPACES TO PRF-REC
+           STRING FUNCTION TRIM(USERNAME)     DELIMITED BY SIZE
+                  " "                         DELIMITED BY SIZE
+                  FUNCTION TRIM(LK-FIRST-NAME) DELIMITED BY SIZE
+                  " "                         DELIMITED BY SIZE
+                  FUNCTION TRIM(LK-LAST-NAME)  DELIMITED BY SIZE
+                  INTO PRF-REC
+           END-STRING
+           WRITE PRF-REC
+           CLOSE PROFILES-INDEX
 
            *> Now reopen for writing fresh data
            OPEN OUTPUT PROFILE-FILE
@@ -953,6 +1002,47 @@
            END-PERFORM
            EXIT PARAGRAPH.
 
+      GET-DISPLAY-NAME-FOR-OTHER.
+          *> Default to heuristic formatting from username
+          MOVE "N" TO NAME-FOUND
+          MOVE SPACES TO WS-DISPLAY-NAME
+          MOVE OTHER-USER TO PENDING-SENDER
+          PERFORM MAKE-DISPLAY-NAME
+
+          *> Try profiles index for an authoritative full name
+          OPEN INPUT PROFILES-INDEX
+          IF PRO-FS = "00"
+             PERFORM UNTIL 1 = 0
+                READ PROFILES-INDEX NEXT RECORD
+                   AT END EXIT PERFORM
+                   NOT AT END
+                      UNSTRING PRF-REC
+                         DELIMITED BY ALL " "
+                         INTO IDX-USER IDX-FN IDX-LN
+                      END-UNSTRING
+                      IF FUNCTION TRIM(IDX-USER) = FUNCTION TRIM(OTHER-USER)
+                         MOVE "Y" TO NAME-FOUND
+                         MOVE IDX-FN TO LK-FIRST-NAME
+                         MOVE IDX-LN TO LK-LAST-NAME
+                         EXIT PERFORM
+                      END-IF
+                END-READ
+             END-PERFORM
+          END-IF
+          CLOSE PROFILES-INDEX
+
+          IF NAME-FOUND = "Y"
+             INSPECT LK-FIRST-NAME REPLACING ALL "_" BY " "
+             INSPECT LK-LAST-NAME  REPLACING ALL "_" BY " "
+             MOVE SPACES TO WS-DISPLAY-NAME
+             STRING FUNCTION TRIM(LK-FIRST-NAME) DELIMITED BY SIZE
+                    " "                          DELIMITED BY SIZE
+                    FUNCTION TRIM(LK-LAST-NAME)  DELIMITED BY SIZE
+                    INTO WS-DISPLAY-NAME
+             END-STRING
+          END-IF
+          EXIT PARAGRAPH.
+
       *> Build TARGET-USER from WS-FIELD by removing spaces and underscores
       MAKE-USERNAME-FROM-FULLNAME.
           MOVE SPACES TO TARGET-USER
@@ -1132,7 +1222,7 @@
           EXIT PARAGRAPH.
 
        *> List full-name style connections for the logged-in user
-       LIST-MY-CONNECTIONS.
+      LIST-MY-CONNECTIONS.
            OPEN INPUT NETWORK
            PERFORM UNTIL 1 = 0
               READ NETWORK NEXT RECORD
@@ -1151,9 +1241,7 @@
                        END-IF
                     END-IF
                     IF OTHER-USER NOT = SPACES
-                       MOVE OTHER-USER TO PENDING-SENDER
-                       MOVE SPACES TO WS-DISPLAY-NAME
-                       PERFORM MAKE-DISPLAY-NAME
+                       PERFORM GET-DISPLAY-NAME-FOR-OTHER
                        MOVE FUNCTION TRIM(WS-DISPLAY-NAME) TO MSG
                        PERFORM WRITE-OUTPUT
                     END-IF
@@ -1182,9 +1270,7 @@
                        END-IF
                     END-IF
                     IF OTHER-USER NOT = SPACES
-                       MOVE OTHER-USER TO PENDING-SENDER
-                       MOVE SPACES TO WS-DISPLAY-NAME
-                       PERFORM MAKE-DISPLAY-NAME
+                       PERFORM GET-DISPLAY-NAME-FOR-OTHER
                        MOVE FUNCTION TRIM(WS-DISPLAY-NAME) TO MSG
                        PERFORM WRITE-OUTPUT
                     END-IF
