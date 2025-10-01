@@ -70,23 +70,27 @@ Coursera
 2022
 6
 LOGIN
-JohnSmith
+Emily225
 Password1!
 5
-Emily Johnson
+John Smith
 Y
 6
 LOGIN
 Emily225
 Password1!
-7
-Y
 4
 6
 LOGIN
 JohnSmith
 Password1!
 4
+6
+LOGIN
+JohnSmith
+Password1!
+7
+Y
 6
 LOGIN
 Emily225
@@ -94,16 +98,4 @@ Password1!
 5
 John Smith
 y
-6
-LOGIN
-JohnSmith
-Password1!
-7
-Y
-4
-6
-LOGIN
-Emily225
-Password1!
-4
 6

@@ -24,9 +24,6 @@
            SELECT CONN-TMP ASSIGN TO "connections.tmp"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS TMP-FS.
-           SELECT REGISTRY ASSIGN TO "user_registry.txt"
-              ORGANIZATION IS LINE SEQUENTIAL
-              FILE STATUS IS REG-FS.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -51,9 +48,6 @@
        FD  CONN-TMP.
        01  TMP-REC            PIC X(100).
 
-       FD  REGISTRY.
-       01  REG-REC            PIC X(120).
-
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
@@ -61,7 +55,6 @@
        77  CONN-FS             PIC XX VALUE SPACES.
        77  NET-FS             PIC XX VALUE SPACES.
        77  TMP-FS             PIC XX VALUE SPACES.
-       77  REG-FS             PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
@@ -79,14 +72,12 @@
 
 
        77  WS-FILENAME          PIC X(128).
+       77  WS-FILENAME-SAVED   PIC X(128).
        77  WS-FIELD             PIC X(5000).
        77  IDX                  PIC 9  VALUE 1.
        *> Fields used when splitting an account line
        77  ACCT-USER            PIC X(20).
        77  ACCT-PASS            PIC X(20).
-       77  REG-USER           PIC X(20).
-       77  REG-NAME           PIC X(60).
-       77  LOOKUP-USER        PIC X(20).
 
        *> Password validation helpers
        77  PASSWORD-LEN         PIC 99.
@@ -100,8 +91,6 @@
        77  TARGET-USER         PIC X(20).
        77  USER-FOUND          PIC X  VALUE "N".
        77  REQ-FOUND           PIC X  VALUE "N".
-       77  HAS-PROFILE         PIC X  VALUE "N".
-       77  LAST-PROFILE-USER   PIC X(20) VALUE SPACES.
        77  PENDING-SENDER      PIC X(20).
        77  PENDING-RECIP       PIC X(20).
 
@@ -149,15 +138,6 @@
 
            *> Ensure CONN-TMP is closed/clean (will be created on demand)
            CLOSE CONN-TMP
-
-           *> Ensure REGISTRY file exists
-           OPEN I-O REGISTRY
-           IF REG-FS NOT = "00"
-              CLOSE REGISTRY
-              OPEN OUTPUT REGISTRY
-              CLOSE REGISTRY
-              OPEN I-O REGISTRY
-           END-IF
 
            PERFORM LOAD-ACCOUNTS *> count number of accounts in the file
 
@@ -207,35 +187,50 @@
                IF MSG = "CREATE"
                    PERFORM DO-CREATE
                ELSE
-                   IF MSG = "STARTOVER"
-                       *> Ensure file is not open before truncating
-                       CLOSE ACCOUNTS
-                       *> Truncate accounts.txt (or create empty file)
-                       OPEN OUTPUT ACCOUNTS
-                       MOVE "All accounts cleared. Returning to main menu." TO MSG
-                       PERFORM WRITE-OUTPUT
-                       IF ACC-FS = "00"
-                          CLOSE ACCOUNTS
-                          OPEN I-O ACCOUNTS
-         
-                          *> Reset in-memory count so logic matches disk
-                          MOVE 0 TO ACCT-COUNT
-                       ELSE
-                          *> Surface the file-status for debugging
-                          STRING "STARTOVER failed. FILE STATUS=" ACC-FS
-                                 DELIMITED BY SIZE INTO MSG
-                          END-STRING
-                          PERFORM WRITE-OUTPUT
-                       END-IF
+                IF MSG = "STARTOVER"
+                       PERFORM CLEAR-ALL-FILES
                        EXIT PARAGRAPH
-                   ELSE 
-                       MOVE "Invalid Input" to MSG
-                       PERFORM WRITE-OUTPUT
-                   END-IF
-               END-IF
+                ELSE 
+                    MOVE "Invalid Input" to MSG
+                    PERFORM WRITE-OUTPUT
+           END-IF
+           END-IF
            END-IF.
 
 
+
+       *> Clear core persistent text files when user types STARTOVER (no registry)
+       CLEAR-ALL-FILES.
+           *> ACCOUNTS
+           CLOSE ACCOUNTS
+           OPEN OUTPUT ACCOUNTS
+           IF ACC-FS = "00"
+              CLOSE ACCOUNTS
+              OPEN I-O ACCOUNTS
+           END-IF
+
+           *> CONNECTIONS
+           CLOSE CONNECTIONS
+           OPEN OUTPUT CONNECTIONS
+           IF CONN-FS = "00"
+              CLOSE CONNECTIONS
+              OPEN I-O CONNECTIONS
+           END-IF
+
+           *> NETWORK
+           CLOSE NETWORK
+           OPEN OUTPUT NETWORK
+           IF NET-FS = "00"
+              CLOSE NETWORK
+              OPEN I-O NETWORK
+           END-IF
+
+           *> Reset derived in-memory counters/flags
+           MOVE 0 TO ACCT-COUNT
+
+           MOVE "All data cleared (accounts, connections, network)." TO MSG
+           PERFORM WRITE-OUTPUT
+           EXIT PARAGRAPH.
 
        DO-LOGIN.
            MOVE "Enter username:" TO MSG
@@ -325,6 +320,7 @@
                PERFORM DO-PROFILE
             WHEN 4
                MOVE 'N' TO PROFILE-EOF
+               PERFORM SET-MY-PROFILE-FILENAME
                OPEN INPUT PROFILE-FILE
                IF PROFILE-STATUS NOT = "00"
                   MOVE "PROFILE FILE DOES NOT EXIST." TO MSG
@@ -676,19 +672,6 @@
            END-PERFORM
 
            CLOSE PROFILE-FILE
-           *> Update registry mapping username -> Full Name (First Last)
-           OPEN EXTEND REGISTRY
-           MOVE SPACES TO REG-REC
-           STRING FUNCTION TRIM(USERNAME) DELIMITED BY SIZE
-                  "|"                  DELIMITED BY SIZE
-                  FUNCTION TRIM(FIRST-NAME) DELIMITED BY SIZE
-                  " "                  DELIMITED BY SIZE
-                  FUNCTION TRIM(LAST-NAME)  DELIMITED BY SIZE
-                  INTO REG-REC
-           END-STRING
-           WRITE REG-REC
-           CLOSE REGISTRY
-           MOVE FUNCTION TRIM(USERNAME) TO LAST-PROFILE-USER
            MOVE "Profile saved successfully." TO MSG
            PERFORM WRITE-OUTPUT
            PERFORM USER-MENU
@@ -729,6 +712,7 @@
 
            MOVE "Searching for profile..." TO MSG
            PERFORM WRITE-OUTPUT
+           MOVE WS-FILENAME TO WS-FILENAME-SAVED
 
            *> Convert the input name to filename format (First_Last)
            *> Replace spaces with underscores for filename
@@ -771,7 +755,7 @@
               PERFORM WRITE-OUTPUT
               MOVE TARGET-USER TO PARAM-USER
               PERFORM LIST-CONNECTIONS-FOR-USER
-              MOVE "Send a connection request to this user? (Y/N, Enter=skip):" TO MSG
+              MOVE "Send a connection request to this user? (Y/N):" TO MSG
               PERFORM WRITE-OUTPUT
               READ INPUTFILE AT END MOVE SPACE TO RESP-CHAR
                  NOT AT END MOVE FUNCTION TRIM(INPUT-REC)(1:1) TO RESP-CHAR
@@ -783,145 +767,17 @@
                  END-IF
                  PERFORM SEND-CONNECTION-REQUEST-DIRECT
               END-IF
+              MOVE WS-FILENAME-SAVED TO WS-FILENAME
            ELSE
               MOVE "Profile not found." TO MSG
               PERFORM WRITE-OUTPUT
+              MOVE WS-FILENAME-SAVED TO WS-FILENAME
            END-IF.
        
-
-*> Determine if the logged-in user has created a profile (exists in REGISTRY, NETWORK, or CONNECTIONS)
-      CHECK-USER-HAS-PROFILE.
-          IF FUNCTION TRIM(LAST-PROFILE-USER) = FUNCTION TRIM(USERNAME)
-             MOVE "Y" TO HAS-PROFILE
-             EXIT PARAGRAPH
-          END-IF
-          MOVE "N" TO HAS-PROFILE
-          OPEN INPUT REGISTRY
-          PERFORM UNTIL 1 = 0
-             READ REGISTRY NEXT RECORD
-                AT END EXIT PERFORM
-                NOT AT END
-                   UNSTRING REG-REC DELIMITED BY "|"
-                      INTO REG-USER REG-NAME
-                   END-UNSTRING
-                   IF FUNCTION TRIM(REG-USER) = FUNCTION TRIM(USERNAME)
-                      MOVE "Y" TO HAS-PROFILE
-                   END-IF
-             END-READ
-          END-PERFORM
-          CLOSE REGISTRY
-
-          *> Fallback #1: if not in registry, consider having a profile when user already appears in NETWORK
-          IF HAS-PROFILE NOT = "Y"
-             OPEN INPUT NETWORK
-             PERFORM UNTIL 1 = 0
-                READ NETWORK NEXT RECORD
-                   AT END EXIT PERFORM
-                   NOT AT END
-                      UNSTRING NET-REC DELIMITED BY ALL " "
-                         INTO ACCT-USER ACCT-PASS
-                      END-UNSTRING
-                      IF FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(USERNAME)
-                         OR FUNCTION TRIM(ACCT-PASS) = FUNCTION TRIM(USERNAME)
-                         MOVE "Y" TO HAS-PROFILE
-                         *> Backfill REGISTRY if missing for this USERNAME
-                         OPEN INPUT REGISTRY
-                         MOVE "N" TO REQ-FOUND
-                         PERFORM UNTIL 1 = 0
-                            READ REGISTRY NEXT RECORD
-                               AT END EXIT PERFORM
-                               NOT AT END
-                                  UNSTRING REG-REC DELIMITED BY "|"
-                                     INTO REG-USER REG-NAME
-                                  END-UNSTRING
-                                  IF FUNCTION TRIM(REG-USER) = FUNCTION TRIM(USERNAME)
-                                     MOVE "Y" TO REQ-FOUND
-                                  END-IF
-                            END-READ
-                         END-PERFORM
-                         CLOSE REGISTRY
-                         IF REQ-FOUND NOT = "Y"
-                            MOVE USERNAME TO PENDING-SENDER
-                            MOVE SPACES TO WS-DISPLAY-NAME
-                            PERFORM MAKE-DISPLAY-NAME
-                            OPEN EXTEND REGISTRY
-                            MOVE SPACES TO REG-REC
-                            STRING FUNCTION TRIM(USERNAME) DELIMITED BY SIZE
-                                   "|"                  DELIMITED BY SIZE
-                                   FUNCTION TRIM(WS-DISPLAY-NAME) DELIMITED BY SIZE
-                                   INTO REG-REC
-                            END-STRING
-                            WRITE REG-REC
-                            CLOSE REGISTRY
-                         END-IF
-                         EXIT PERFORM
-                      END-IF
-                END-READ
-             END-PERFORM
-             CLOSE NETWORK
-          END-IF
-
-          *> Fallback #2: if still not found, consider having a profile when there are any pending requests involving the user
-          IF HAS-PROFILE NOT = "Y"
-             OPEN INPUT CONNECTIONS
-             PERFORM UNTIL 1 = 0
-                READ CONNECTIONS NEXT RECORD
-                   AT END EXIT PERFORM
-                   NOT AT END
-                      UNSTRING CONN-REC DELIMITED BY ALL " "
-                         INTO ACCT-USER ACCT-PASS
-                      END-UNSTRING
-                      IF FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(USERNAME)
-                         OR FUNCTION TRIM(ACCT-PASS) = FUNCTION TRIM(USERNAME)
-                         MOVE "Y" TO HAS-PROFILE
-                         *> Backfill REGISTRY if missing for this USERNAME
-                         OPEN INPUT REGISTRY
-                         MOVE "N" TO REQ-FOUND
-                         PERFORM UNTIL 1 = 0
-                            READ REGISTRY NEXT RECORD
-                               AT END EXIT PERFORM
-                               NOT AT END
-                                  UNSTRING REG-REC DELIMITED BY "|"
-                                     INTO REG-USER REG-NAME
-                                  END-UNSTRING
-                                  IF FUNCTION TRIM(REG-USER) = FUNCTION TRIM(USERNAME)
-                                     MOVE "Y" TO REQ-FOUND
-                                  END-IF
-                            END-READ
-                         END-PERFORM
-                         CLOSE REGISTRY
-                         IF REQ-FOUND NOT = "Y"
-                            MOVE USERNAME TO PENDING-SENDER
-                            MOVE SPACES TO WS-DISPLAY-NAME
-                            PERFORM MAKE-DISPLAY-NAME
-                            OPEN EXTEND REGISTRY
-                            MOVE SPACES TO REG-REC
-                            STRING FUNCTION TRIM(USERNAME) DELIMITED BY SIZE
-                                   "|"                  DELIMITED BY SIZE
-                                   FUNCTION TRIM(WS-DISPLAY-NAME) DELIMITED BY SIZE
-                                   INTO REG-REC
-                            END-STRING
-                            WRITE REG-REC
-                            CLOSE REGISTRY
-                         END-IF
-                         EXIT PERFORM
-                      END-IF
-                END-READ
-             END-PERFORM
-             CLOSE CONNECTIONS
-          END-IF
-
-          EXIT PARAGRAPH.
 
 *> ================= Connections Feature =================
 *> Public entry: prompt for a username and attempt to send a request
        SEND-CONNECTION-REQUEST.
-           PERFORM CHECK-USER-HAS-PROFILE
-           IF HAS-PROFILE NOT = "Y"
-              MOVE "Create a profile first (choose 3 = Create/Edit My Profile)." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
            MOVE "Enter the username you want to connect with:" TO MSG
            PERFORM WRITE-OUTPUT
            READ INPUTFILE AT END EXIT PARAGRAPH
@@ -931,17 +787,12 @@
 
 *> Entry that uses TARGET-USER directly (expects it to be set)
       SEND-CONNECTION-REQUEST-DIRECT.
-          PERFORM CHECK-USER-HAS-PROFILE
-          IF HAS-PROFILE NOT = "Y"
-             MOVE "Create a profile first (choose 3 = Create/Edit My Profile)." TO MSG
-             PERFORM WRITE-OUTPUT
-             EXIT PARAGRAPH
-          END-IF
           IF TARGET-USER = SPACES
              MOVE "No username provided." TO MSG
              PERFORM WRITE-OUTPUT
              EXIT PARAGRAPH
           END-IF
+
           *> prevent self-requests
           IF FUNCTION TRIM(TARGET-USER) = FUNCTION TRIM(USERNAME)
              MOVE "You cannot send a connection request to yourself." TO MSG
@@ -1078,32 +929,6 @@
               PERFORM WRITE-OUTPUT
            END-IF
            EXIT PARAGRAPH.
-
-       *> Lookup full display name by username via REGISTRY; fallback to heuristic
-       LOOKUP-DISPLAY-NAME.
-           MOVE SPACES TO WS-DISPLAY-NAME
-           OPEN INPUT REGISTRY
-           PERFORM UNTIL 1 = 0
-              READ REGISTRY NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING REG-REC DELIMITED BY "|"
-                       INTO REG-USER REG-NAME
-                    END-UNSTRING
-                    IF FUNCTION TRIM(REG-USER) = FUNCTION TRIM(LOOKUP-USER)
-                       MOVE FUNCTION TRIM(REG-NAME) TO WS-DISPLAY-NAME
-                       *> do not EXIT here; allow later duplicates to overwrite (last wins)
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE REGISTRY
-           IF WS-DISPLAY-NAME = SPACES
-              MOVE LOOKUP-USER TO PENDING-SENDER
-              MOVE SPACES TO WS-DISPLAY-NAME
-              PERFORM MAKE-DISPLAY-NAME
-           END-IF
-           EXIT PARAGRAPH.
-
        *> Convert a username like JohnSmith or John_Smith to a display name "John Smith"
        MAKE-DISPLAY-NAME.
            MOVE 1 TO I
@@ -1142,6 +967,15 @@
                    ADD 1 TO FIELD-LEN
              END-EVALUATE
           END-PERFORM
+          EXIT PARAGRAPH.
+
+      SET-MY-PROFILE-FILENAME.
+          MOVE SPACES TO WS-FILENAME
+          STRING FUNCTION TRIM(FIRST-NAME) DELIMITED BY SIZE
+                 "_"                       DELIMITED BY SIZE
+                 FUNCTION TRIM(LAST-NAME)  DELIMITED BY SIZE
+                 INTO WS-FILENAME
+          END-STRING
           EXIT PARAGRAPH.
 
 *> Helper: find a pending request (SENDER -> RECIPIENT). Uses PENDING-SENDER/PENDING-RECIP and sets REQ-FOUND to "Y" if found.
@@ -1317,9 +1151,9 @@
                        END-IF
                     END-IF
                     IF OTHER-USER NOT = SPACES
-                       MOVE OTHER-USER TO LOOKUP-USER
+                       MOVE OTHER-USER TO PENDING-SENDER
                        MOVE SPACES TO WS-DISPLAY-NAME
-                       PERFORM LOOKUP-DISPLAY-NAME
+                       PERFORM MAKE-DISPLAY-NAME
                        MOVE FUNCTION TRIM(WS-DISPLAY-NAME) TO MSG
                        PERFORM WRITE-OUTPUT
                     END-IF
@@ -1348,9 +1182,9 @@
                        END-IF
                     END-IF
                     IF OTHER-USER NOT = SPACES
-                       MOVE OTHER-USER TO LOOKUP-USER
+                       MOVE OTHER-USER TO PENDING-SENDER
                        MOVE SPACES TO WS-DISPLAY-NAME
-                       PERFORM LOOKUP-DISPLAY-NAME
+                       PERFORM MAKE-DISPLAY-NAME
                        MOVE FUNCTION TRIM(WS-DISPLAY-NAME) TO MSG
                        PERFORM WRITE-OUTPUT
                     END-IF
