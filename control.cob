@@ -4,28 +4,28 @@
        ENVIRONMENT DIVISION. *> big section where we describe our machine environment (files, devices, terminals, etc)
        INPUT-OUTPUT SECTION. *> declare external files -- we tell COBOL what files exist and how we control them
        FILE-CONTROL. *> starts the list of file declarations. we write SELECT statements to connect logical names in our program to actual files on disk
-           SELECT INPUTFILE ASSIGN TO "user_input" *> reads simulated user input (user_input.txt)
+           SELECT INPUTFILE ASSIGN TO "data/user_input.txt" *> reads simulated user input
               ORGANIZATION IS LINE SEQUENTIAL.
-           SELECT OUTPUTFILE ASSIGN TO "output_log.txt" *>writes logs (output_log.txt)
+           SELECT OUTPUTFILE ASSIGN TO "data/output_log.txt" *>writes logs (output_log.txt)
               ORGANIZATION IS LINE SEQUENTIAL. *> each record is a line of text
-           SELECT ACCOUNTS ASSIGN TO "accounts.txt" *> stores accounts persistently (accounts.txt)
+           SELECT ACCOUNTS ASSIGN TO "data/accounts.txt" *> stores accounts persistently (accounts.txt)
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS ACC-FS. *>gives us a way to check if opening the file succeeded
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PROFILE-STATUS.
-           SELECT CONNECTIONS ASSIGN TO "connections.txt"
+           SELECT CONNECTIONS ASSIGN TO "data/connections.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS CONN-FS.
 
-           SELECT NETWORK ASSIGN TO "network.txt"
+           SELECT NETWORK ASSIGN TO "data/network.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS NET-FS.
-           SELECT CONN-TMP ASSIGN TO "connections.tmp"
+           SELECT CONN-TMP ASSIGN TO "data/connections.tmp"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS TMP-FS.
 
-           SELECT PROFILES-INDEX ASSIGN TO "profiles.idx"
+           SELECT PROFILES-INDEX ASSIGN TO "data/profiles.idx"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PRO-FS.
 
@@ -81,6 +81,7 @@
 
        77  WS-FILENAME          PIC X(128).
        77  WS-FILENAME-SAVED   PIC X(128).
+       77  PROFILE-NAME        PIC X(128).
        77  WS-FIELD             PIC X(5000).
        77  IDX                  PIC 9  VALUE 1.
        *> Fields used when splitting an account line
@@ -174,6 +175,7 @@
            CLOSE INPUTFILE 
            CLOSE OUTPUTFILE
            CLOSE ACCOUNTS
+           MOVE 0 TO RETURN-CODE
            STOP RUN.
 
        
@@ -511,11 +513,17 @@
            END-PERFORM
            MOVE FUNCTION TRIM(WS-FIELD) TO LAST-NAME
 
-           *> Build filename using First_Last format
-           MOVE SPACES TO WS-FILENAME
+           *> Build filename using First_Last format inside data/profiles directory
+           MOVE SPACES TO PROFILE-NAME
            STRING FUNCTION TRIM(FIRST-NAME) DELIMITED BY SIZE
                   "_"                       DELIMITED BY SIZE
                   FUNCTION TRIM(LAST-NAME)  DELIMITED BY SIZE
+                  INTO PROFILE-NAME
+           END-STRING
+           INSPECT PROFILE-NAME REPLACING ALL " " BY "_"
+           MOVE SPACES TO WS-FILENAME
+           STRING "data/profiles/" DELIMITED BY SIZE
+                  FUNCTION TRIM(PROFILE-NAME) DELIMITED BY SIZE
                   INTO WS-FILENAME
            END-STRING
 
@@ -770,14 +778,20 @@
 
            *> Convert the input name to filename format (First_Last)
            *> Replace spaces with underscores for filename
-           MOVE SPACES TO WS-FILENAME
            MOVE WS-FIELD TO MSG
            PERFORM WRITE-OUTPUT
 
-           MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO WS-FILENAME
-           INSPECT WS-FILENAME
-               REPLACING FIRST " " BY "_"
-           MOVE WS-FILENAME TO MSG
+           MOVE SPACES TO PROFILE-NAME
+           MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO PROFILE-NAME
+           INSPECT PROFILE-NAME REPLACING ALL " " BY "_"
+           MOVE PROFILE-NAME TO MSG
+           PERFORM WRITE-OUTPUT
+
+           MOVE SPACES TO WS-FILENAME
+           STRING "data/profiles/" DELIMITED BY SIZE
+                  FUNCTION TRIM(PROFILE-NAME) DELIMITED BY SIZE
+                  INTO WS-FILENAME
+           END-STRING
 
            *> Try to open the profile file directly using the converted filename
            MOVE 'N' TO PROFILE-EOF

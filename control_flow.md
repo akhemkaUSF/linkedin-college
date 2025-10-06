@@ -68,20 +68,21 @@ Type CREATE to make a new account
 
 **Output:**
 ```
-Choose: 0=Return, 1=Search job, 2=Learn skill, 3=Create/Edit Profile, 4=Output Profile
-5=Search Profile, 6=View Pending Requests, 7=View My Network
+Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile,
+4=Output Profile, 5=Search Profile, 6=Return,
+7=View Pending Requests, 8=View My Network
 ```
 
-- **0 – Return** → Exit the user menu  
 - **1 – Search job** → Output `Under Construction`  
 - **2 – Learn skill** → Show 1-5 skill list, read a choice, then output `Under Construction`  
-- **3 – Create/Edit Profile** → Jump to profile workflow (`DO-PROFILE`)  
+- **3 – Create/Edit My Profile** → Jump to profile workflow (`DO-PROFILE`)  
 - **4 – Output Profile** → Display profile file, list connections via `LIST-MY-CONNECTIONS`, then return  
 - **5 – Search Profile** → Run `SEARCH-PROFILE`, optionally send or queue connection requests  
-- **6 – View Pending Requests** → Invoke `LIST-PENDING-REQUESTS` to accept/reject inbound requests  
-- **7 – View My Network** → Call `VIEW-MY-NETWORK` (copybook) to list established connections or `(none)`  
+- **6 – Return** → Exit the user menu  
+- **7 – View Pending Requests** → Invoke `LIST-PENDING-REQUESTS` to accept/reject inbound requests  
+- **8 – View My Network** → Call `VIEW-MY-NETWORK` (copybook) to list established connections or `(none)`  
 
-- **Anything else** → Output `Invalid option, you must select a number 0-7`  
+- **Anything else** → Output `Invalid option, you must select a number 1-8`  
 
 ---
 
@@ -89,4 +90,6 @@ Choose: 0=Return, 1=Search job, 2=Learn skill, 3=Create/Edit Profile, 4=Output P
 
 - The program always returns to the **Main Menu** after completing any branch.  
 - Input and output are strictly line-driven, following the prompts.  
-- Accounts are persistent across runs via `accounts.txt`.  
+- Accounts are persistent across runs via `data/accounts.txt`.  
+- Runtime files (input scripts, connections, profiles, logs) live under the `data/` directory.  
+- The program sets `RETURN-CODE` to `0` before exiting.  
