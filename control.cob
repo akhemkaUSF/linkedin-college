@@ -948,30 +948,30 @@
                        END-STRING
                        PERFORM WRITE-OUTPUT
 
-                       MOVE "Accept this request?  Y = Yes,  N = No,  Enter = Finish" TO MSG
+                       MOVE "Accept this request?  Y = Yes,  N = No,  Enter = Skip" TO MSG
                        PERFORM WRITE-OUTPUT
                        READ INPUTFILE AT END MOVE SPACE TO RESP-CHAR
                           NOT AT END MOVE FUNCTION TRIM(INPUT-REC)(1:1) TO RESP-CHAR
                        END-READ
-                       IF RESP-CHAR = "Y" OR RESP-CHAR = "y"
-                          *> Accept this single request (safe sequence)
-                          MOVE FUNCTION TRIM(PENDING-SENDER) TO PENDING-SENDER
-                          MOVE FUNCTION TRIM(USERNAME)       TO PENDING-RECIP
-                          CLOSE CONNECTIONS
-                          PERFORM ACCEPT-REQUEST-DIRECT
-                          OPEN INPUT CONNECTIONS
-                       ELSE
-                          IF RESP-CHAR = SPACE
-                             *> Enter ends the review immediately
-                             EXIT PERFORM
-                          ELSE
-                             *> 'N' or 'n' skips to the next request
-                             CONTINUE
-                          END-IF
-                       END-IF
-                    END-IF
-              END-READ
-           END-PERFORM
+                       EVALUATE TRUE
+                           WHEN RESP-CHAR = "Y" OR RESP-CHAR = "y"
+                              MOVE FUNCTION TRIM(PENDING-SENDER) TO PENDING-SENDER
+                              MOVE FUNCTION TRIM(USERNAME)       TO PENDING-RECIP
+                              CLOSE CONNECTIONS
+                              PERFORM ACCEPT-REQUEST-DIRECT
+                              OPEN INPUT CONNECTIONS
+                           WHEN RESP-CHAR = "N" OR RESP-CHAR = "n"
+                              MOVE FUNCTION TRIM(PENDING-SENDER) TO PENDING-SENDER
+                              MOVE FUNCTION TRIM(USERNAME)       TO PENDING-RECIP
+                              CLOSE CONNECTIONS
+                              PERFORM REJECT-REQUEST-DIRECT
+                              OPEN INPUT CONNECTIONS
+                           WHEN RESP-CHAR = SPACES
+                              CONTINUE
+                        END-EVALUATE                
+                     END-IF
+               END-READ
+            END-PERFORM.
            CLOSE CONNECTIONS
            IF REQ-FOUND NOT = "Y"
               MOVE "(none)" TO MSG
@@ -1220,6 +1220,14 @@
           MOVE "Connection accepted." TO MSG
           PERFORM WRITE-OUTPUT
           EXIT PARAGRAPH.
+
+      *> Caller rejects a request and it is removed from the pending requests
+      REJECT-REQUEST-DIRECT.
+
+         PERFORM REMOVE-PENDING
+         MOVE "Connection rejected--request removed from queue." TO MSG
+         PERFORM WRITE-OUTPUT
+         EXIT PARAGRAPH.
 
        *> List full-name style connections for the logged-in user
       LIST-MY-CONNECTIONS.
