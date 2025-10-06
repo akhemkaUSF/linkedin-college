@@ -513,14 +513,26 @@
            END-PERFORM
            MOVE FUNCTION TRIM(WS-FIELD) TO LAST-NAME
 
-           *> Build filename using First_Last format inside data/profiles directory
+           *> Prepare sanitized components for filenames/index entries
+           MOVE FUNCTION TRIM(FIRST-NAME) TO LK-FIRST-NAME
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(LK-FIRST-NAME TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT LK-FIRST-NAME(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+           MOVE FUNCTION TRIM(LAST-NAME)  TO LK-LAST-NAME
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(LK-LAST-NAME TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT LK-LAST-NAME(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+
+           *> Build filename using sanitized values inside data/profiles directory
            MOVE SPACES TO PROFILE-NAME
-           STRING FUNCTION TRIM(FIRST-NAME) DELIMITED BY SIZE
+           STRING FUNCTION TRIM(LK-FIRST-NAME) DELIMITED BY SIZE
                   "_"                       DELIMITED BY SIZE
-                  FUNCTION TRIM(LAST-NAME)  DELIMITED BY SIZE
+                  FUNCTION TRIM(LK-LAST-NAME)  DELIMITED BY SIZE
                   INTO PROFILE-NAME
            END-STRING
-           INSPECT PROFILE-NAME REPLACING ALL " " BY "_"
+           MOVE FUNCTION TRIM(PROFILE-NAME TRAILING) TO PROFILE-NAME
            MOVE SPACES TO WS-FILENAME
            STRING "data/profiles/" DELIMITED BY SIZE
                   FUNCTION TRIM(PROFILE-NAME) DELIMITED BY SIZE
@@ -532,10 +544,6 @@
            CLOSE PROFILE-FILE
 
            *> Update profiles index (username -> first/last)
-           MOVE FUNCTION TRIM(FIRST-NAME) TO LK-FIRST-NAME
-           MOVE FUNCTION TRIM(LAST-NAME)  TO LK-LAST-NAME
-           INSPECT LK-FIRST-NAME REPLACING ALL " " BY "_"
-           INSPECT LK-LAST-NAME  REPLACING ALL " " BY "_"
            OPEN EXTEND PROFILES-INDEX
            MOVE SPACES TO PRF-REC
            STRING FUNCTION TRIM(USERNAME)     DELIMITED BY SIZE
@@ -783,7 +791,11 @@
 
            MOVE SPACES TO PROFILE-NAME
            MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO PROFILE-NAME
-           INSPECT PROFILE-NAME REPLACING ALL " " BY "_"
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(PROFILE-NAME TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT PROFILE-NAME(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+           MOVE FUNCTION TRIM(PROFILE-NAME TRAILING) TO PROFILE-NAME
            MOVE PROFILE-NAME TO MSG
            PERFORM WRITE-OUTPUT
 
