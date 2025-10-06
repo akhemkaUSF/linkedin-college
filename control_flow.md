@@ -68,29 +68,20 @@ Type CREATE to make a new account
 
 **Output:**
 ```
-Choose: 1=Search job, 2=Learn skill, 3=Return
+Choose: 0=Return, 1=Search job, 2=Learn skill, 3=Create/Edit Profile, 4=Output Profile
+5=Search Profile, 6=View Pending Requests, 7=View My Network
 ```
 
-- **If input = 1**  
-   Output: `Under Construction` → Back to Main Menu  
+- **0 – Return** → Exit the user menu  
+- **1 – Search job** → Output `Under Construction`  
+- **2 – Learn skill** → Show 1-5 skill list, read a choice, then output `Under Construction`  
+- **3 – Create/Edit Profile** → Jump to profile workflow (`DO-PROFILE`)  
+- **4 – Output Profile** → Display profile file, list connections via `LIST-MY-CONNECTIONS`, then return  
+- **5 – Search Profile** → Run `SEARCH-PROFILE`, optionally send or queue connection requests  
+- **6 – View Pending Requests** → Invoke `LIST-PENDING-REQUESTS` to accept/reject inbound requests  
+- **7 – View My Network** → Call `VIEW-MY-NETWORK` (copybook) to list established connections or `(none)`  
 
-- **If input = 2**  
-   Output:  
-   ```
-   Pick a skill (1-5):
-   1. COBOL Basics
-   2. File Handling
-   3. Data Validation
-   4. Debugging Techniques
-   5. System Integration
-   ```  
-   → Output: `"You selected <skill> (under construction)"` → Back to Main Menu  
-
-- **If input = 3**  
-   Output: `Returning to main menu` → Back to Main Menu  
-
-- **Else**  
-   Output: `Invalid option` → Back to Main Menu  
+- **Anything else** → Output `Invalid option, you must select a number 0-7`  
 
 ---
 

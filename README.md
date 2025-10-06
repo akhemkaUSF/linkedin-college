@@ -68,6 +68,7 @@ Then open a Pull Request on GitHub to merge your branch into `main`.
 ## 📂 File Overview
 
 - `control.cob` — main COBOL program
+- `networking.cpy` — shared networking (requests + connections) routines
 - `user_input.txt` — simulated user commands (input)
 - `output_log.txt` — program logs (output)
 - `accounts.txt` — persistent account storage
