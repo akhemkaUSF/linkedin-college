@@ -1,4 +1,21 @@
-STARTOVER
+
+*> ==== Minimal single reject: Alice -> Dave, Dave rejects (N) ====
+LOGIN
+AliceG
+Password1!
+5
+Dave Davis
+Y
+0
+
+LOGIN
+DaveD
+Password1!
+6
+N
+0
+
+ 
 CREATE
 JohnSmith
 Password1!
@@ -101,3 +118,234 @@ John Smith
 y
 7
 0
+LOGIN
+Emily225
+Password1!
+0
+
+ 
+
+ 
+*> ==== Additional scenarios: create more users for multiple/mixed tests ====
+CREATE
+AliceG
+Password1!
+LOGIN
+AliceG
+Password1!
+3
+Alice
+Green
+State University
+Mathematics
+2022
+Enjoys data analysis and problem solving.
+Math Tutor
+Campus Learning Center
+2020–2022
+Helped students with calculus and linear algebra.
+Volunteer
+Community Library
+2019–2020
+Organized events and workshops.
+Bachelor of Science
+State University
+2018–2022
+High School Diploma
+Central High
+2014–2018
+Certificate in Data Analysis
+Coursera
+2021
+0
+
+CREATE
+BobB
+Password1!
+LOGIN
+BobB
+Password1!
+3
+Bob
+Brown
+Tech Institute
+Information Systems
+2021
+Systems enthusiast focusing on networks and security.
+IT Support
+Campus IT Desk
+2019–2021
+Resolved tickets and maintained lab equipment.
+Hackathon Participant
+Various Events
+2018–2020
+Built prototypes under time pressure.
+Bachelor of Technology
+Tech Institute
+2017–2021
+High School Diploma
+North High
+2013–2017
+Certificate in Cybersecurity Basics
+edX
+2020
+0
+
+*> ==== Send multiple pending requests to JohnSmith ====
+LOGIN
+AliceG
+Password1!
+5
+John Smith
+Y
+0
+
+LOGIN
+BobB
+Password1!
+5
+John Smith
+Y
+0
+
+*> ==== John processes mixed: accept Emily, reject Alice, accept Bob ====
+LOGIN
+JohnSmith
+Password1!
+6
+Y
+N
+Y
+7
+0
+
+*> ==== Verify network views for each user (none/one/multiple) ====
+LOGIN
+AliceG
+Password1!
+7
+0
+
+LOGIN
+BobB
+Password1!
+7
+0
+
+LOGIN
+Emily225
+Password1!
+7
+0
+
+ 
+
+*> ==== Accept multiple: create Dave, receive two, accept both ====
+CREATE
+DaveD
+Password1!
+LOGIN
+DaveD
+Password1!
+3
+Dave
+Davis
+Polytechnic College
+Electrical Engineering
+2025
+Interested in embedded systems and power electronics.
+Intern
+ElectroWorks
+2023
+Worked on PCB design and testing.
+Club Treasurer
+IEEE Student Branch
+2022–2024
+Managed budgets and events.
+Bachelor of Engineering
+Polytechnic College
+2021–2025
+High School Diploma
+East High
+2017–2021
+Certificate in Embedded C
+Udemy
+2022
+0
+
+LOGIN
+JohnSmith
+Password1!
+5
+Dave Davis
+Y
+0
+
+LOGIN
+BobB
+Password1!
+5
+Dave Davis
+Y
+0
+
+LOGIN
+DaveD
+Password1!
+6
+Y
+y
+7
+0
+
+*> ==== Final verification block (persistence within and across runs) ====
+LOGIN
+JohnSmith
+Password1!
+7
+0
+
+LOGIN
+Emily225
+Password1!
+7
+0
+
+LOGIN
+CarolC
+Password1!
+7
+0
+
+LOGIN
+DaveD
+Password1!
+7
+0
+
+*> ==== Mixed contiguous pending handling for one user (two requests → Y then N) ====
+LOGIN
+CarolC
+Password1!
+5
+John Smith
+Y
+0
+
+LOGIN
+DaveD
+Password1!
+5
+John Smith
+Y
+0
+
+LOGIN
+JohnSmith
+Password1!
+6
+Y
+N
+0
+
+ 
