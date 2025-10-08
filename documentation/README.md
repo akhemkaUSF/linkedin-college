@@ -1,9 +1,9 @@
 # COBOL Control Flow Demo
 
 This repository contains a COBOL program (`control.cob`) that simulates a simple account system with login and account creation logic.  
-- **Accounts are persisted** in `accounts.txt`  
-- **User input** is read from `user_input.txt`  
-- **Logs** are written to `output_log.txt`  
+- **Accounts are persisted** in `data/accounts.txt`  
+- **User input** is read from `data/user_input.txt`  
+- **Logs** are written to `data/output_log.txt`  
 
 ---
 
@@ -45,9 +45,12 @@ cobc -x -free control.cob -o controlflow
 ```
 
 The program will:
-- Read commands from `user_input.txt`
-- Append new accounts into `accounts.txt`
-- Log system messages into `output_log.txt`
+- Read commands from `data/user_input.txt`
+- Append new accounts into `data/accounts.txt`
+- Log system messages into `data/output_log.txt`
+- Store pending requests, network links, and profiles under the `data/` directory
+- Present the post-login menu across multiple lines so each line fits within the 120-character log record
+- Exit with `RETURN-CODE` 0 on successful completion
 
 ---
 
@@ -68,15 +71,18 @@ Then open a Pull Request on GitHub to merge your branch into `main`.
 ## 📂 File Overview
 
 - `control.cob` — main COBOL program
-- `user_input.txt` — simulated user commands (input)
-- `output_log.txt` — program logs (output)
-- `accounts.txt` — persistent account storage
+- `networking.cpy` — shared networking (requests + connections) routines
+- `data/user_input.txt` — simulated user commands (input)
+- `data/output_log.txt` — program logs (output)
+- `data/accounts.txt` — persistent account storage
+- `data/connections.txt`, `data/network.txt`, `data/connections.tmp` — connection workflow data
+- `data/profiles.idx` & `data/profiles/` — profile index plus individual profile files
 
 ---
 
 ## 📝 Sample Input
 
-Here is a simple `user_input.txt` you can use to test the program:
+Here is a simple `data/user_input.txt` you can use to test the program:
 
 ```
 CREATE

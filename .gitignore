@@ -1,0 +1,9 @@
+data/profiles/*
+!data/profiles/.gitkeep
+data/accounts.txt
+data/connections.tmp
+data/connections.txt
+data/network.txt
+data/output_log.txt
+data/profiles.idx
+controlflow

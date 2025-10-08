@@ -4,28 +4,28 @@
        ENVIRONMENT DIVISION. *> big section where we describe our machine environment (files, devices, terminals, etc)
        INPUT-OUTPUT SECTION. *> declare external files -- we tell COBOL what files exist and how we control them
        FILE-CONTROL. *> starts the list of file declarations. we write SELECT statements to connect logical names in our program to actual files on disk
-           SELECT INPUTFILE ASSIGN TO "user_input" *> reads simulated user input (user_input.txt)
+           SELECT INPUTFILE ASSIGN TO "data/user_input.txt" *> reads simulated user input
               ORGANIZATION IS LINE SEQUENTIAL.
-           SELECT OUTPUTFILE ASSIGN TO "output_log.txt" *>writes logs (output_log.txt)
+           SELECT OUTPUTFILE ASSIGN TO "data/output_log.txt" *>writes logs (output_log.txt)
               ORGANIZATION IS LINE SEQUENTIAL. *> each record is a line of text
-           SELECT ACCOUNTS ASSIGN TO "accounts.txt" *> stores accounts persistently (accounts.txt)
+           SELECT ACCOUNTS ASSIGN TO "data/accounts.txt" *> stores accounts persistently (accounts.txt)
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS ACC-FS. *>gives us a way to check if opening the file succeeded
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PROFILE-STATUS.
-           SELECT CONNECTIONS ASSIGN TO "connections.txt"
+           SELECT CONNECTIONS ASSIGN TO "data/connections.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS CONN-FS.
 
-           SELECT NETWORK ASSIGN TO "network.txt"
+           SELECT NETWORK ASSIGN TO "data/network.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS NET-FS.
-           SELECT CONN-TMP ASSIGN TO "connections.tmp"
+           SELECT CONN-TMP ASSIGN TO "data/connections.tmp"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS TMP-FS.
 
-           SELECT PROFILES-INDEX ASSIGN TO "profiles.idx"
+           SELECT PROFILES-INDEX ASSIGN TO "data/profiles.idx"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PRO-FS.
 
@@ -81,6 +81,7 @@
 
        77  WS-FILENAME          PIC X(128).
        77  WS-FILENAME-SAVED   PIC X(128).
+       77  PROFILE-NAME        PIC X(128).
        77  WS-FIELD             PIC X(5000).
        77  IDX                  PIC 9  VALUE 1.
        *> Fields used when splitting an account line
@@ -174,6 +175,7 @@
            CLOSE INPUTFILE 
            CLOSE OUTPUTFILE
            CLOSE ACCOUNTS
+           MOVE 0 TO RETURN-CODE
            STOP RUN.
 
        
@@ -310,9 +312,11 @@
            OPEN I-O ACCOUNTS.
 
        USER-MENU.
-        *> three options 
-           MOVE "Choose: 1=Search job, 2=Learn skill, 3=Create/Edit My Profile, 4=Output Profile, 5=Search Profile, 6=Return, 7=View Pending Requests" TO MSG
+        *> user menu options presented after login
+           MOVE "Choose: 0=Return, 1=Search job, 2=Learn skill, 3=Create/Edit Profile, 4=Output Profile" TO MSG
            *> print out the contents of MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "5=Search Profile, 6=View Pending Requests, 7=View My Network" TO MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
            READ INPUTFILE AT END EXIT PARAGRAPH
@@ -373,13 +377,16 @@
             WHEN 5
                  PERFORM SEARCH-PROFILE
                  PERFORM USER-MENU
-              WHEN 7
+              WHEN 6
                  PERFORM LIST-PENDING-REQUESTS
                  PERFORM USER-MENU
-              WHEN 6
+              WHEN 7
+                 PERFORM VIEW-MY-NETWORK
+                 PERFORM USER-MENU
+              WHEN 0
                  EXIT PARAGRAPH
               WHEN OTHER
-                 MOVE "Invalid option, you must select a number 1-6" TO MSG
+                 MOVE "Invalid option, you must select a number 0-7" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
 
@@ -506,11 +513,29 @@
            END-PERFORM
            MOVE FUNCTION TRIM(WS-FIELD) TO LAST-NAME
 
-           *> Build filename using First_Last format
-           MOVE SPACES TO WS-FILENAME
-           STRING FUNCTION TRIM(FIRST-NAME) DELIMITED BY SIZE
+           *> Prepare sanitized components for filenames/index entries
+           MOVE FUNCTION TRIM(FIRST-NAME) TO LK-FIRST-NAME
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(LK-FIRST-NAME TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT LK-FIRST-NAME(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+           MOVE FUNCTION TRIM(LAST-NAME)  TO LK-LAST-NAME
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(LK-LAST-NAME TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT LK-LAST-NAME(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+
+           *> Build filename using sanitized values inside data/profiles directory
+           MOVE SPACES TO PROFILE-NAME
+           STRING FUNCTION TRIM(LK-FIRST-NAME) DELIMITED BY SIZE
                   "_"                       DELIMITED BY SIZE
-                  FUNCTION TRIM(LAST-NAME)  DELIMITED BY SIZE
+                  FUNCTION TRIM(LK-LAST-NAME)  DELIMITED BY SIZE
+                  INTO PROFILE-NAME
+           END-STRING
+           MOVE FUNCTION TRIM(PROFILE-NAME TRAILING) TO PROFILE-NAME
+           MOVE SPACES TO WS-FILENAME
+           STRING "data/profiles/" DELIMITED BY SIZE
+                  FUNCTION TRIM(PROFILE-NAME) DELIMITED BY SIZE
                   INTO WS-FILENAME
            END-STRING
 
@@ -519,10 +544,6 @@
            CLOSE PROFILE-FILE
 
            *> Update profiles index (username -> first/last)
-           MOVE FUNCTION TRIM(FIRST-NAME) TO LK-FIRST-NAME
-           MOVE FUNCTION TRIM(LAST-NAME)  TO LK-LAST-NAME
-           INSPECT LK-FIRST-NAME REPLACING ALL " " BY "_"
-           INSPECT LK-LAST-NAME  REPLACING ALL " " BY "_"
            OPEN EXTEND PROFILES-INDEX
            MOVE SPACES TO PRF-REC
            STRING FUNCTION TRIM(USERNAME)     DELIMITED BY SIZE
@@ -765,14 +786,24 @@
 
            *> Convert the input name to filename format (First_Last)
            *> Replace spaces with underscores for filename
-           MOVE SPACES TO WS-FILENAME
            MOVE WS-FIELD TO MSG
            PERFORM WRITE-OUTPUT
 
-           MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO WS-FILENAME
-           INSPECT WS-FILENAME
-               REPLACING FIRST " " BY "_"
-           MOVE WS-FILENAME TO MSG
+           MOVE SPACES TO PROFILE-NAME
+           MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO PROFILE-NAME
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(PROFILE-NAME TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT PROFILE-NAME(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+           MOVE FUNCTION TRIM(PROFILE-NAME TRAILING) TO PROFILE-NAME
+           MOVE PROFILE-NAME TO MSG
+           PERFORM WRITE-OUTPUT
+
+           MOVE SPACES TO WS-FILENAME
+           STRING "data/profiles/" DELIMITED BY SIZE
+                  FUNCTION TRIM(PROFILE-NAME) DELIMITED BY SIZE
+                  INTO WS-FILENAME
+           END-STRING
 
            *> Try to open the profile file directly using the converted filename
            MOVE 'N' TO PROFILE-EOF
@@ -825,239 +856,7 @@
        
 
 *> ================= Connections Feature =================
-*> Public entry: prompt for a username and attempt to send a request
-       SEND-CONNECTION-REQUEST.
-           MOVE "Enter the username you want to connect with:" TO MSG
-           PERFORM WRITE-OUTPUT
-           READ INPUTFILE AT END EXIT PARAGRAPH
-              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO TARGET-USER
-           END-READ
-           PERFORM SEND-CONNECTION-REQUEST-DIRECT.
-
-*> Entry that uses TARGET-USER directly (expects it to be set)
-      SEND-CONNECTION-REQUEST-DIRECT.
-          IF TARGET-USER = SPACES
-             MOVE "No username provided." TO MSG
-             PERFORM WRITE-OUTPUT
-             EXIT PARAGRAPH
-          END-IF
-
-          *> prevent self-requests
-          IF FUNCTION TRIM(TARGET-USER) = FUNCTION TRIM(USERNAME)
-             MOVE "You cannot send a connection request to yourself." TO MSG
-             PERFORM WRITE-OUTPUT
-             EXIT PARAGRAPH
-          END-IF
-
-           *> validate that target user exists in ACCOUNTS
-           MOVE "N" TO USER-FOUND
-           OPEN INPUT ACCOUNTS
-           PERFORM UNTIL 1 = 0
-              READ ACCOUNTS NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING ACCT-REC
-                       DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(TARGET-USER)
-                       MOVE "Y" TO USER-FOUND
-                       EXIT PERFORM
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE ACCOUNTS
-           OPEN I-O ACCOUNTS
-
-           IF USER-FOUND NOT = "Y"
-              MOVE "Recipient account not found. Request not sent." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
-
-           *> prevent sending if already connected
-           MOVE FUNCTION TRIM(USERNAME)    TO CANON-A
-           MOVE FUNCTION TRIM(TARGET-USER) TO CANON-B
-           PERFORM IS-CONNECTED
-           IF REQ-FOUND = "Y"
-              MOVE "You are already connected with this user." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
-
-           *> check for duplicate pending request (sender -> recipient)
-           MOVE "N" TO REQ-FOUND
-           MOVE FUNCTION TRIM(USERNAME)     TO PENDING-SENDER
-           MOVE FUNCTION TRIM(TARGET-USER)  TO PENDING-RECIP
-           PERFORM FIND-PENDING
-           IF REQ-FOUND = "Y"
-              MOVE "You have already sent a pending request to this user." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
-
-           *> check for reverse pending (recipient already requested you)
-           MOVE "N" TO REQ-FOUND
-           MOVE FUNCTION TRIM(TARGET-USER)  TO PENDING-SENDER
-           MOVE FUNCTION TRIM(USERNAME)     TO PENDING-RECIP
-           PERFORM FIND-PENDING
-           IF REQ-FOUND = "Y"
-              MOVE "This user has already sent you a connection request (pending)." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
-
-           *> append the new request
-           MOVE SPACES TO CONN-REC
-           STRING FUNCTION TRIM(USERNAME) DELIMITED BY SIZE
-                  " "                  DELIMITED BY SIZE
-                  FUNCTION TRIM(TARGET-USER) DELIMITED BY SIZE
-                  INTO CONN-REC
-           END-STRING
-           OPEN EXTEND CONNECTIONS
-           WRITE CONN-REC
-           CLOSE CONNECTIONS
-
-           MOVE "Connection request sent." TO MSG
-           PERFORM WRITE-OUTPUT
-           EXIT PARAGRAPH.
-
-*> List all pending requests where current user is the recipient
-       LIST-PENDING-REQUESTS.
-           MOVE "Your pending connection requests:" TO MSG
-           PERFORM WRITE-OUTPUT
-           OPEN INPUT CONNECTIONS
-           MOVE "N" TO REQ-FOUND
-           PERFORM UNTIL 1 = 0
-              READ CONNECTIONS NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING CONN-REC
-                       DELIMITED BY ALL " "
-                       INTO PENDING-SENDER PENDING-RECIP
-                    END-UNSTRING
-                    IF FUNCTION TRIM(PENDING-RECIP) = FUNCTION TRIM(USERNAME)
-                       MOVE "Y" TO REQ-FOUND
-                       *> Build a friendlier display name from username (e.g., JohnSmith -> John Smith)
-                       MOVE SPACES TO WS-DISPLAY-NAME
-                       PERFORM MAKE-DISPLAY-NAME
-                       MOVE SPACES TO MSG
-                       STRING "Request from: " DELIMITED BY SIZE
-                              FUNCTION TRIM(WS-DISPLAY-NAME) DELIMITED BY SIZE
-                              INTO MSG
-                       END-STRING
-                       PERFORM WRITE-OUTPUT
-
-                       MOVE "Accept this request?  Y = Yes,  N = No,  Enter = Finish" TO MSG
-                       PERFORM WRITE-OUTPUT
-                       READ INPUTFILE AT END MOVE SPACE TO RESP-CHAR
-                          NOT AT END MOVE FUNCTION TRIM(INPUT-REC)(1:1) TO RESP-CHAR
-                       END-READ
-                       IF RESP-CHAR = "Y" OR RESP-CHAR = "y"
-                          *> Accept this single request (safe sequence)
-                          MOVE FUNCTION TRIM(PENDING-SENDER) TO PENDING-SENDER
-                          MOVE FUNCTION TRIM(USERNAME)       TO PENDING-RECIP
-                          CLOSE CONNECTIONS
-                          PERFORM ACCEPT-REQUEST-DIRECT
-                          OPEN INPUT CONNECTIONS
-                       ELSE
-                          IF RESP-CHAR = SPACE
-                             *> Enter ends the review immediately
-                             EXIT PERFORM
-                          ELSE
-                             *> 'N' or 'n' skips to the next request
-                             CONTINUE
-                          END-IF
-                       END-IF
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE CONNECTIONS
-           IF REQ-FOUND NOT = "Y"
-              MOVE "(none)" TO MSG
-              PERFORM WRITE-OUTPUT
-           END-IF
-           EXIT PARAGRAPH.
-       *> Convert a username like JohnSmith or John_Smith to a display name "John Smith"
-       MAKE-DISPLAY-NAME.
-           MOVE 1 TO I
-           MOVE 1 TO FIELD-LEN
-           MOVE SPACES TO WS-DISPLAY-NAME
-           PERFORM VARYING I FROM 1 BY 1 UNTIL I > FUNCTION LENGTH(FUNCTION TRIM(PENDING-SENDER))
-              EVALUATE TRUE
-                 WHEN PENDING-SENDER(I:1) = "_"
-                    MOVE " " TO WS-DISPLAY-NAME(FIELD-LEN:1)
-                    ADD 1 TO FIELD-LEN
-                 WHEN I > 1 AND PENDING-SENDER(I:1) >= "A" AND PENDING-SENDER(I:1) <= "Z"
-                    IF WS-DISPLAY-NAME(FIELD-LEN - 1:1) NOT = " "
-                       MOVE " " TO WS-DISPLAY-NAME(FIELD-LEN:1)
-                       ADD 1 TO FIELD-LEN
-                    END-IF
-                    MOVE PENDING-SENDER(I:1) TO WS-DISPLAY-NAME(FIELD-LEN:1)
-                    ADD 1 TO FIELD-LEN
-                 WHEN OTHER
-                    MOVE PENDING-SENDER(I:1) TO WS-DISPLAY-NAME(FIELD-LEN:1)
-                    ADD 1 TO FIELD-LEN
-              END-EVALUATE
-           END-PERFORM
-           EXIT PARAGRAPH.
-
-      GET-DISPLAY-NAME-FOR-OTHER.
-          *> Default to heuristic formatting from username
-          MOVE "N" TO NAME-FOUND
-          MOVE SPACES TO WS-DISPLAY-NAME
-          MOVE OTHER-USER TO PENDING-SENDER
-          PERFORM MAKE-DISPLAY-NAME
-
-          *> Try profiles index for an authoritative full name
-          OPEN INPUT PROFILES-INDEX
-          IF PRO-FS = "00"
-             PERFORM UNTIL 1 = 0
-                READ PROFILES-INDEX NEXT RECORD
-                   AT END EXIT PERFORM
-                   NOT AT END
-                      UNSTRING PRF-REC
-                         DELIMITED BY ALL " "
-                         INTO IDX-USER IDX-FN IDX-LN
-                      END-UNSTRING
-                      IF FUNCTION TRIM(IDX-USER) = FUNCTION TRIM(OTHER-USER)
-                         MOVE "Y" TO NAME-FOUND
-                         MOVE IDX-FN TO LK-FIRST-NAME
-                         MOVE IDX-LN TO LK-LAST-NAME
-                         EXIT PERFORM
-                      END-IF
-                END-READ
-             END-PERFORM
-          END-IF
-          CLOSE PROFILES-INDEX
-
-          IF NAME-FOUND = "Y"
-             INSPECT LK-FIRST-NAME REPLACING ALL "_" BY " "
-             INSPECT LK-LAST-NAME  REPLACING ALL "_" BY " "
-             MOVE SPACES TO WS-DISPLAY-NAME
-             STRING FUNCTION TRIM(LK-FIRST-NAME) DELIMITED BY SIZE
-                    " "                          DELIMITED BY SIZE
-                    FUNCTION TRIM(LK-LAST-NAME)  DELIMITED BY SIZE
-                    INTO WS-DISPLAY-NAME
-             END-STRING
-          END-IF
-          EXIT PARAGRAPH.
-
-      *> Build TARGET-USER from WS-FIELD by removing spaces and underscores
-      MAKE-USERNAME-FROM-FULLNAME.
-          MOVE SPACES TO TARGET-USER
-          MOVE 1 TO I
-          MOVE 1 TO FIELD-LEN
-          PERFORM VARYING I FROM 1 BY 1 UNTIL I > FUNCTION LENGTH(FUNCTION TRIM(WS-FIELD))
-             EVALUATE TRUE
-                WHEN WS-FIELD(I:1) = " " OR WS-FIELD(I:1) = "_"
-                   CONTINUE
-                WHEN OTHER
-                   MOVE WS-FIELD(I:1) TO TARGET-USER(FIELD-LEN:1)
-                   ADD 1 TO FIELD-LEN
-             END-EVALUATE
-          END-PERFORM
-          EXIT PARAGRAPH.
+      COPY "networking.cpy".
 
       SET-MY-PROFILE-FILENAME.
           MOVE SPACES TO WS-FILENAME
@@ -1067,214 +866,3 @@
                  INTO WS-FILENAME
           END-STRING
           EXIT PARAGRAPH.
-
-*> Helper: find a pending request (SENDER -> RECIPIENT). Uses PENDING-SENDER/PENDING-RECIP and sets REQ-FOUND to "Y" if found.
-       FIND-PENDING.
-           OPEN INPUT CONNECTIONS
-           MOVE "N" TO REQ-FOUND
-           PERFORM UNTIL 1 = 0
-              READ CONNECTIONS NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING CONN-REC
-                       DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    *> Reuse ACCT-USER/ACCT-PASS fields as temp sender/recipient holders
-                    IF FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(PENDING-SENDER)
-                       AND FUNCTION TRIM(ACCT-PASS) = FUNCTION TRIM(PENDING-RECIP)
-                       MOVE "Y" TO REQ-FOUND
-                       EXIT PERFORM
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE CONNECTIONS
-           EXIT PARAGRAPH.
-
-*> Check whether two users are already connected (canonical pair search).
-*> Inputs: CANON-A, CANON-B; Output: REQ-FOUND = "Y" if connected
-       IS-CONNECTED.
-           MOVE "N" TO REQ-FOUND
-           MOVE FUNCTION TRIM(CANON-A) TO CANON-A
-           MOVE FUNCTION TRIM(CANON-B) TO CANON-B
-           *> order lexicographically into CANON-A <= CANON-B
-           IF CANON-A > CANON-B
-              MOVE CANON-A TO WS-TEMP
-              MOVE CANON-B TO CANON-A
-              MOVE WS-TEMP TO CANON-B
-           END-IF
-           OPEN INPUT NETWORK
-           PERFORM UNTIL 1 = 0
-              READ NETWORK NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING NET-REC DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF FUNCTION TRIM(ACCT-USER) = CANON-A
-                       AND FUNCTION TRIM(ACCT-PASS) = CANON-B
-                       MOVE "Y" TO REQ-FOUND
-                       EXIT PERFORM
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE NETWORK
-           EXIT PARAGRAPH.
-
-*> Append a new connection as canonical pair to NETWORK if not present.
-       ADD-CONNECTION.
-           MOVE FUNCTION TRIM(CANON-A) TO CANON-A
-           MOVE FUNCTION TRIM(CANON-B) TO CANON-B
-           IF CANON-A > CANON-B
-              MOVE CANON-A TO WS-TEMP
-              MOVE CANON-B TO CANON-A
-              MOVE WS-TEMP TO CANON-B
-           END-IF
-           OPEN EXTEND NETWORK
-           MOVE SPACES TO NET-REC
-           STRING CANON-A DELIMITED BY SIZE
-                  " "    DELIMITED BY SIZE
-                  CANON-B DELIMITED BY SIZE
-                  INTO NET-REC
-           END-STRING
-           WRITE NET-REC
-           CLOSE NETWORK
-           EXIT PARAGRAPH.
-
-*> Remove a single pending request (PENDING-SENDER -> PENDING-RECIP) from CONNECTIONS
-       REMOVE-PENDING.
-           OPEN INPUT CONNECTIONS
-           OPEN OUTPUT CONN-TMP
-           PERFORM UNTIL 1 = 0
-              READ CONNECTIONS NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING CONN-REC DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF NOT (FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(PENDING-SENDER)
-                           AND FUNCTION TRIM(ACCT-PASS) = FUNCTION TRIM(PENDING-RECIP))
-                       MOVE CONN-REC TO TMP-REC
-                       WRITE TMP-REC
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE CONNECTIONS
-           CLOSE CONN-TMP
-           *> Replace connections.txt with tmp file contents
-           OPEN OUTPUT CONNECTIONS
-           CLOSE CONNECTIONS
-           OPEN INPUT CONN-TMP
-           OPEN EXTEND CONNECTIONS
-           PERFORM UNTIL 1 = 0
-              READ CONN-TMP NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    MOVE TMP-REC TO CONN-REC
-                    WRITE CONN-REC
-              END-READ
-           END-PERFORM
-           CLOSE CONN-TMP
-           CLOSE CONNECTIONS
-           EXIT PARAGRAPH.
-
-*> Accept a pending request from PENDING-SENDER to PENDING-RECIP (current user).
-       ACCEPT-REQUEST.
-           MOVE "N" TO REQ-FOUND
-           PERFORM FIND-PENDING
-           IF REQ-FOUND NOT = "Y"
-              MOVE "No such pending request found." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
-           *> check already connected
-           MOVE PENDING-SENDER TO CANON-A
-           MOVE PENDING-RECIP  TO CANON-B
-           PERFORM IS-CONNECTED
-           IF REQ-FOUND = "Y"
-              MOVE "You are already connected with this user." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
-           *> add connection and remove pending
-           PERFORM ADD-CONNECTION
-           PERFORM REMOVE-PENDING
-           MOVE "Connection accepted." TO MSG
-           PERFORM WRITE-OUTPUT
-           EXIT PARAGRAPH.
-
-      *> Accept when caller already knows the pending exists (no scan). Uses PENDING-SENDER/RECIP
-      ACCEPT-REQUEST-DIRECT.
-          *> check already connected
-          MOVE PENDING-SENDER TO CANON-A
-          MOVE PENDING-RECIP  TO CANON-B
-          PERFORM IS-CONNECTED
-          IF REQ-FOUND = "Y"
-             MOVE "You are already connected with this user." TO MSG
-             PERFORM WRITE-OUTPUT
-             EXIT PARAGRAPH
-          END-IF
-          *> add connection and remove pending
-          PERFORM ADD-CONNECTION
-          PERFORM REMOVE-PENDING
-          MOVE "Connection accepted." TO MSG
-          PERFORM WRITE-OUTPUT
-          EXIT PARAGRAPH.
-
-       *> List full-name style connections for the logged-in user
-      LIST-MY-CONNECTIONS.
-           OPEN INPUT NETWORK
-           PERFORM UNTIL 1 = 0
-              READ NETWORK NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING NET-REC DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(USERNAME)
-                       MOVE FUNCTION TRIM(ACCT-PASS) TO OTHER-USER
-                    ELSE
-                       IF FUNCTION TRIM(ACCT-PASS) = FUNCTION TRIM(USERNAME)
-                          MOVE FUNCTION TRIM(ACCT-USER) TO OTHER-USER
-                       ELSE
-                          MOVE SPACES TO OTHER-USER
-                       END-IF
-                    END-IF
-                    IF OTHER-USER NOT = SPACES
-                       PERFORM GET-DISPLAY-NAME-FOR-OTHER
-                       MOVE FUNCTION TRIM(WS-DISPLAY-NAME) TO MSG
-                       PERFORM WRITE-OUTPUT
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE NETWORK
-           EXIT PARAGRAPH.
-
-       *> List full-name style connections for the user specified in PARAM-USER
-       LIST-CONNECTIONS-FOR-USER.
-           OPEN INPUT NETWORK
-           PERFORM UNTIL 1 = 0
-              READ NETWORK NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING NET-REC DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF FUNCTION TRIM(ACCT-USER) = FUNCTION TRIM(PARAM-USER)
-                       MOVE FUNCTION TRIM(ACCT-PASS) TO OTHER-USER
-                    ELSE
-                       IF FUNCTION TRIM(ACCT-PASS) = FUNCTION TRIM(PARAM-USER)
-                          MOVE FUNCTION TRIM(ACCT-USER) TO OTHER-USER
-                       ELSE
-                          MOVE SPACES TO OTHER-USER
-                       END-IF
-                    END-IF
-                    IF OTHER-USER NOT = SPACES
-                       PERFORM GET-DISPLAY-NAME-FOR-OTHER
-                       MOVE FUNCTION TRIM(WS-DISPLAY-NAME) TO MSG
-                       PERFORM WRITE-OUTPUT
-                    END-IF
-              END-READ
-           END-PERFORM
-           CLOSE NETWORK
-           EXIT PARAGRAPH.
