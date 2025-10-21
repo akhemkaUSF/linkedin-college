@@ -426,14 +426,21 @@
        JOB-INTERNSHIP-SEARCH. 
           MOVE "Choose: 0=Return, 1=Post a job/internship, 2=Browse Jobs/Internships" TO MSG
           PERFORM WRITE-OUTPUT
-          WHEN 0
-             EXIT PARAGRAPH 
-          WHEN 1 
-             PERFORM POST-JOB-INTERNSHIP
-          WHEN 2
-             MOVE "Under Construction" to MSG 
-             PERFORM WRITE-OUTPUT 
-          END-EVALUATE.
+          READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
+           END-READ
+           MOVE OPTION-CHOICE TO MSG 
+           PERFORM WRITE-OUTPUT
+           *> function to evaluate the option they choose
+           EVALUATE OPTION-CHOICE 
+             WHEN 0
+                EXIT PARAGRAPH 
+             WHEN 1 
+                PERFORM POST-JOB-INTERNSHIP
+             WHEN 2
+                MOVE "Under Construction" to MSG 
+                PERFORM WRITE-OUTPUT 
+           END-EVALUATE.
        
        POST-JOB-INTERNSHIP.
           *> -----------------------
