@@ -65,20 +65,20 @@
        FD  PROFILES-INDEX.
        01  PRF-REC            PIC X(120).
 
-       FD  JOB-FILE
-       01  JOB-REC 
+       FD  JOB-FILE           
+       01  JOB-REC            PIC X(120).
 
        FD  JOB-INDEX
-       01  BROWSE-REC
+       01  BROWSE-REC         PIC X(120).
 
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
-       77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
-       77  PROFILE-STATUS               PIC XX VALUE SPACES. 
+       77  ACC-FS              PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
+       77  PROFILE-STATUS      PIC XX VALUE SPACES. 
        77  CONN-FS             PIC XX VALUE SPACES.
-       77  NET-FS             PIC XX VALUE SPACES.
-       77  TMP-FS             PIC XX VALUE SPACES.
-       77  PRO-FS             PIC XX VALUE SPACES.
+       77  NET-FS              PIC XX VALUE SPACES.
+       77  TMP-FS              PIC XX VALUE SPACES.
+       77  PRO-FS              PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
