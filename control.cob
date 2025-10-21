@@ -65,10 +65,10 @@
        FD  PROFILES-INDEX.
        01  PRF-REC            PIC X(120).
 
-       FD  JOB-FILE           
+       FD  JOB-FILE.           
        01  JOB-REC            PIC X(120).
 
-       FD  JOB-INDEX
+       FD  JOB-INDEX.
        01  BROWSE-REC         PIC X(120).
 
        WORKING-STORAGE SECTION.
