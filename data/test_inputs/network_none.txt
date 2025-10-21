@@ -1,0 +1,37 @@
+STARTOVER
+CREATE
+SoloUser
+Password1!
+LOGIN
+SoloUser
+Password1!
+3
+Solo
+User
+Nowhere University
+Undeclared
+2026
+About
+ 
+ 
+ 
+ 
+ 
+ 
+Bachelor of Arts
+Nowhere University
+2022–2026
+High School Diploma
+Some High
+2018–2022
+Certificate
+Provider
+2023
+0
+
+LOGIN
+SoloUser
+Password1!
+7
+0
+

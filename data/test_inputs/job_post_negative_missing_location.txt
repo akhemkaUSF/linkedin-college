@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser6
+Password6!
+LOGIN
+testuser6
+Password6!
+3
+Diana
+Martinez
+Yale
+Medicine
+2026
+
+Medical Intern
+Yale Hospital
+2024-2025
+Assisted in patient care
+
+
+
+
+
+
+M.D. Medicine
+Yale
+2022-2026
+
+
+
+
+
+8
+1
+Clinical Research Coordinator
+Coordinate clinical trials and manage research documentation for medical studies.
+Mayo Clinic
+
+$65,000/year
+0

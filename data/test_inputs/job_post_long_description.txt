@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser9
+Password9!
+LOGIN
+testuser9
+Password9!
+3
+Grace
+Lee
+Duke
+Computer Science
+2024
+
+Software Engineer
+MegaCorp
+2022-2024
+Developed enterprise software
+
+
+
+
+
+
+B.S. CS
+Duke
+2020-2024
+
+
+
+
+
+8
+1
+Principal Software Engineer
+We are seeking an exceptional Principal Software Engineer to join our elite engineering team. This role requires extensive experience in distributed systems, microservices architecture, cloud computing, and team leadership. You will be responsible for designing and implementing large-scale systems that serve millions of users worldwide. The ideal candidate has 10+ years of experience, deep knowledge of system design patterns, expertise in multiple programming languages including Java, Python, Go, and JavaScript, and a proven track record of delivering high-quality software at scale. You will mentor junior engineers, lead architectural discussions, collaborate with product managers and designers, and drive technical excellence across the organization. This is a unique opportunity to work on challenging problems, influence technical direction, and make a significant impact on our product and engineering culture. We offer competitive compensation, comprehensive benefits, flexible work arrangements, professional development opportunities, and a collaborative work environment where innovation and creativity are encouraged and rewarded.
+Microsoft
+Redmond, WA
+$180,000-$220,000/year + equity + bonus
+0

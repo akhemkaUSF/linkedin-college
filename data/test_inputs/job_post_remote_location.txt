@@ -1,0 +1,47 @@
+STARTOVER
+CREATE
+testuser10
+Password10!
+LOGIN
+testuser10
+Password10!
+3
+Henry
+Wilson
+NYU
+Marketing
+2022
+
+Marketing Manager
+AdTech Inc
+2020-2022
+Managed digital campaigns
+
+
+
+
+
+
+B.A. Marketing
+NYU
+2018-2022
+
+
+
+
+
+8
+1
+Digital Marketing Manager
+Lead digital marketing initiatives for our growing SaaS platform.
+Salesforce
+Remote (US only)
+$75,000/year
+8
+1
+Content Marketing Specialist
+Create engaging content across multiple channels to drive brand awareness.
+HubSpot
+Hybrid - Boston, MA
+$60,000/year
+0
