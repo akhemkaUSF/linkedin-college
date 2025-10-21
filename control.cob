@@ -79,6 +79,8 @@
        77  NET-FS              PIC XX VALUE SPACES.
        77  TMP-FS              PIC XX VALUE SPACES.
        77  PRO-FS              PIC XX VALUE SPACES.
+       77  JOB-FS              PIC XX VALUE SPACES.
+       77  BROWSE-FS              PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
@@ -150,7 +152,6 @@
        *> Minimal helpers to make a safe filename
        77  SAFE-TITLE         PIC X(128).
        77  SAFE-EMPLOYER      PIC X(128).
-       77  FIELD-LEN          PIC 9(4).
 
        PROCEDURE DIVISION. *> equivalent of the main function in other languages 
        MAIN-PARA. *> main entry point
