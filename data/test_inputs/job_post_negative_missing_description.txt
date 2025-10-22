@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser4
+Password4!
+LOGIN
+testuser4
+Password4!
+3
+Alice
+Williams
+Harvard
+Law
+2025
+
+Legal Intern
+LawFirm Inc
+2023-2024
+Assisted with legal research
+
+
+
+
+
+
+J.D. Law
+Harvard
+2022-2025
+
+
+
+
+
+8
+1
+Legal Assistant
+
+Microsoft
+Seattle, WA
+$55,000/year
+0

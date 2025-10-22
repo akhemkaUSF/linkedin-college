@@ -1,49 +1,30 @@
+STARTOVER
+*> ==== SCENARIO shows notifcation for acceptance and rejections ====
 
-*> ==== Minimal single reject: Alice -> Dave, Dave rejects (N) ====
-LOGIN
-AliceG
-Password1!
-5
-Dave Davis
-Y
-0
-
-LOGIN
-DaveD
-Password1!
-6
-N
-0
-
- 
 CREATE
-JohnSmith
+Alica
 Password1!
 LOGIN
-JohnSmith
+Alica
 Password1!
 3
-John
-Smith
-New York University
-Business Administration
+Taylor
+Morris
+Usf
+Bussiness Managment 
 2024
-Future business leader with a focus on marketing strategy, entrepreneurship, and global trade.
-Marketing Intern
-PepsiCo
-2023
-Supported digital marketing campaigns, analyzed consumer trends, and presented reports to managers.
-Sales Associate
-Retail Solutions Inc.
-2021–2022
-Maintained client relationships, exceeded sales targets, and trained new team members.
-Event Coordinator
-Campus Business Club
-2020–2021
-Organized networking events and managed sponsorships with local companies.
-Bachelor of Science
-New York University
-2020–2024
+Focus on consulting
+Consulting Intern
+USF Intern 
+2025
+Managed officers.
+Club Officer
+Finaince Club
+2023–2024
+Organized CTF nights.
+Bachelor of Arts
+Riverside College
+2021–2025
 High School Diploma
 Roosevelt High School
 2010–2020

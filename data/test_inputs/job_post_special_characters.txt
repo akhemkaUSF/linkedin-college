@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser8
+Password8!
+LOGIN
+testuser8
+Password8!
+3
+Frank
+O'Connor
+Columbia
+Finance
+2023
+
+Financial Analyst
+Smith & Jones LLC
+2021-2023
+Analyzed market trends
+
+
+
+
+
+
+B.S. Finance
+Columbia
+2019-2023
+
+
+
+
+
+8
+1
+Senior Financial Analyst - M&A
+Seeking an analyst with 3+ years experience in mergers & acquisitions, financial modeling, and due diligence. Must have strong Excel/VBA skills.
+Goldman Sachs & Co.
+New York, NY
+$120,000-$150,000/year
+0

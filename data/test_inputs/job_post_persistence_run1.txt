@@ -1,0 +1,47 @@
+STARTOVER
+CREATE
+persistuser
+Password1!
+LOGIN
+persistuser
+Password1!
+3
+Persist
+Tester
+Berkeley
+Computer Science
+2024
+
+Developer
+StartupCo
+2022-2024
+Built innovative software
+
+
+
+
+
+
+B.S. CS
+Berkeley
+2020-2024
+
+
+
+
+
+8
+1
+Full Stack Developer
+Build end-to-end web applications with modern technologies and best practices.
+Tesla
+Palo Alto, CA
+$100,000/year
+8
+1
+Mobile App Developer
+Create cross-platform mobile applications using React Native and Flutter.
+Apple
+Cupertino, CA
+$110,000/year
+0

@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser3
+Password3!
+LOGIN
+testuser3
+Password3!
+3
+Bob
+Johnson
+UCLA
+Business
+2022
+
+Marketing Manager
+BizCorp
+2020-2022
+Managed marketing campaigns
+
+
+
+
+
+
+B.A. Business
+UCLA
+2018-2022
+
+
+
+
+
+8
+1
+
+This is a test to verify the system requires a job title
+TestCompany
+Remote
+$60,000/year
+0
