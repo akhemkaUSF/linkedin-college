@@ -1,0 +1,11 @@
+LOGIN
+persistuser
+Password1!
+8
+1
+Cloud Architect
+Design and implement cloud infrastructure solutions for enterprise clients.
+IBM
+Austin, TX
+$120,000/year
+0

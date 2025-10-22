@@ -1,0 +1,54 @@
+STARTOVER
+CREATE
+testuser7
+Password7!
+LOGIN
+testuser7
+Password7!
+3
+Emily
+Davis
+Cornell
+Engineering
+2023
+
+Software Developer
+TechStart
+2021-2023
+Developed web applications
+
+
+
+
+
+
+B.S. Computer Engineering
+Cornell
+2019-2023
+
+
+
+
+
+8
+1
+Frontend Developer
+Join our team to build modern web applications using React and TypeScript.
+Amazon
+New York, NY
+$85,000/year
+8
+1
+Backend Developer
+Work on scalable backend services using Node.js and AWS infrastructure.
+Amazon
+Seattle, WA
+$90,000/year
+8
+1
+DevOps Engineer
+Manage CI/CD pipelines and cloud infrastructure for our production systems.
+Netflix
+Los Gatos, CA
+$95,000/year
+0

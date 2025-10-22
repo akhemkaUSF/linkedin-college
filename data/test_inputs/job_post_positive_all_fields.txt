@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser1
+Password1!
+LOGIN
+testuser1
+Password1!
+3
+John
+Doe
+MIT
+Computer Science
+2024
+
+Software Engineer
+TechCorp
+2020-2024
+Built scalable systems
+
+
+
+
+
+
+B.S. Computer Science
+MIT
+2020-2024
+
+
+
+
+
+8
+1
+Software Engineer Intern
+Seeking a motivated intern to join our engineering team and work on cutting-edge projects.
+Google
+Mountain View, CA
+$50/hour
+0

@@ -11,9 +11,11 @@
            SELECT ACCOUNTS ASSIGN TO "data/accounts.txt" *> stores accounts persistently (accounts.txt)
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS ACC-FS. *>gives us a way to check if opening the file succeeded
+           
            SELECT PROFILE-FILE ASSIGN TO DYNAMIC WS-FILENAME
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PROFILE-STATUS.
+           
            SELECT CONNECTIONS ASSIGN TO "data/connections.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS CONN-FS.
@@ -28,6 +30,14 @@
            SELECT PROFILES-INDEX ASSIGN TO "data/profiles.idx"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS PRO-FS.
+
+           SELECT JOB-FILE ASSIGN TO DYNAMIC WS-JOB-FILENAME
+              ORGANIZATION IS LINE SEQUENTIAL
+              FILE STATUS IS JOB-FS.
+           
+           SELECT JOB-INDEX ASSIGN TO "data/jobs.idx"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS BROWSE-FS.
 
        DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
@@ -55,14 +65,22 @@
        FD  PROFILES-INDEX.
        01  PRF-REC            PIC X(120).
 
+       FD  JOB-FILE.           
+       01  JOB-REC            PIC X(120).
+
+       FD  JOB-INDEX.
+       01  BROWSE-REC         PIC X(120).
+
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
-       77  ACC-FS               PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
-       77  PROFILE-STATUS               PIC XX VALUE SPACES. 
+       77  ACC-FS              PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
+       77  PROFILE-STATUS      PIC XX VALUE SPACES. 
        77  CONN-FS             PIC XX VALUE SPACES.
-       77  NET-FS             PIC XX VALUE SPACES.
-       77  TMP-FS             PIC XX VALUE SPACES.
-       77  PRO-FS             PIC XX VALUE SPACES.
+       77  NET-FS              PIC XX VALUE SPACES.
+       77  TMP-FS              PIC XX VALUE SPACES.
+       77  PRO-FS              PIC XX VALUE SPACES.
+       77  JOB-FS              PIC XX VALUE SPACES.
+       77  BROWSE-FS              PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
@@ -119,6 +137,21 @@
        77  IDX-FN             PIC X(50).
        77  IDX-LN             PIC X(50).
        77  NAME-FOUND         PIC X  VALUE "N".
+
+
+       77  WS-JOB-FILENAME    PIC X(128).
+       77  JOB-NAME           PIC X(128).
+
+       *> Core job fields
+       77  JOB-TITLE          PIC X(128).
+       77  DESCRIPTION        PIC X(5000).
+       77  EMPLOYER           PIC X(128).
+       77  LOCATION           PIC X(128).
+       77  SALARY             PIC X(64).
+
+       *> Minimal helpers to make a safe filename
+       77  SAFE-TITLE         PIC X(128).
+       77  SAFE-EMPLOYER      PIC X(128).
 
        PROCEDURE DIVISION. *> equivalent of the main function in other languages 
        MAIN-PARA. *> main entry point
@@ -195,7 +228,6 @@
 
        *> entry point into login/create account control flow
        PROCESS-COMMAND.
-    *> Print menu options
            MOVE "What would you like to do? Type LOGIN to sign in. Type CREATE to make a new account." TO MSG
            PERFORM WRITE-OUTPUT
        
@@ -314,9 +346,8 @@
        USER-MENU.
         *> user menu options presented after login
            MOVE "Choose: 0=Return, 1=Search job, 2=Learn skill, 3=Create/Edit Profile, 4=Output Profile" TO MSG
-           *> print out the contents of MSG
            PERFORM WRITE-OUTPUT
-           MOVE "5=Search Profile, 6=View Pending Requests, 7=View My Network" TO MSG
+           MOVE "5=Search Profile, 6=View Pending Requests, 7=View My Network 8=Job search/internship" TO MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
            READ INPUTFILE AT END EXIT PARAGRAPH
@@ -383,12 +414,210 @@
               WHEN 7
                  PERFORM VIEW-MY-NETWORK
                  PERFORM USER-MENU
+              WHEN 8 
+                 PERFORM JOB-INTERNSHIP-SEARCH
+                 PERFORM USER-MENU
               WHEN 0
                  EXIT PARAGRAPH
               WHEN OTHER
                  MOVE "Invalid option, you must select a number 0-7" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
+
+       JOB-INTERNSHIP-SEARCH. 
+          MOVE "Choose: 0=Return, 1=Post a job/internship, 2=Browse Jobs/Internships" TO MSG
+          PERFORM WRITE-OUTPUT
+          READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
+           END-READ
+           MOVE OPTION-CHOICE TO MSG 
+           PERFORM WRITE-OUTPUT
+           *> function to evaluate the option they choose
+           EVALUATE OPTION-CHOICE 
+             WHEN 0
+                EXIT PARAGRAPH 
+             WHEN 1 
+                PERFORM POST-JOB-INTERNSHIP
+             WHEN 2
+                MOVE "Under Construction" to MSG 
+                PERFORM WRITE-OUTPUT 
+           END-EVALUATE.
+       
+       POST-JOB-INTERNSHIP.
+          *> -----------------------
+          *> Collect Job Title (REQ)
+          *> -----------------------
+          MOVE "Enter Job Title:" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE SPACES TO WS-FIELD
+          PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                  NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                  MOVE "Job Title is required. Please re-enter:" TO MSG
+                  PERFORM WRITE-OUTPUT
+              END-IF
+          END-PERFORM
+          MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO JOB-TITLE
+
+          *> --------------------------
+          *> Collect Description (REQ)
+          *> --------------------------
+          MOVE "Enter Description (brief text of the role):" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE SPACES TO WS-FIELD
+          PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                  NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                  MOVE "Description is required. Please re-enter:" TO MSG
+                  PERFORM WRITE-OUTPUT
+              END-IF
+          END-PERFORM
+          MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO DESCRIPTION
+
+          *> -----------------------
+          *> Collect Employer (REQ)
+          *> -----------------------
+          MOVE "Enter Employer (company/organization):" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE SPACES TO WS-FIELD
+          PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                  NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                  MOVE "Employer is required. Please re-enter:" TO MSG
+                  PERFORM WRITE-OUTPUT
+              END-IF
+          END-PERFORM
+          MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO EMPLOYER
+
+          *> ----------------------
+          *> Collect Location (REQ)
+          *> ----------------------
+          MOVE "Enter Location (e.g., Remote, New York, NY):" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE SPACES TO WS-FIELD
+          PERFORM UNTIL WS-FIELD NOT = SPACES
+              READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+                  NOT AT END MOVE INPUT-REC TO WS-FIELD
+              END-READ
+              IF WS-FIELD = SPACES
+                  MOVE "Location is required. Please re-enter:" TO MSG
+                  PERFORM WRITE-OUTPUT
+              END-IF
+          END-PERFORM
+          MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO LOCATION
+
+          *> -----------------------
+          *> Collect Salary (OPTION)
+          *> -----------------------
+          MOVE "Enter Salary (optional, e.g., $50,000/year, $25/hour):" TO MSG
+          PERFORM WRITE-OUTPUT
+          READ INPUTFILE AT END MOVE SPACES TO WS-FIELD
+              NOT AT END MOVE INPUT-REC TO WS-FIELD
+          END-READ
+          MOVE FUNCTION TRIM(WS-FIELD TRAILING) TO SALARY
+
+          *> ==================================
+          *> Build simple filename: data/jobs/<title>_<employer>
+          *> (Spaces -> underscores; keep it minimal)
+          *> ==================================
+          MOVE FUNCTION TRIM(JOB-TITLE TRAILING) TO SAFE-TITLE
+          MOVE FUNCTION LENGTH(FUNCTION TRIM(SAFE-TITLE TRAILING)) TO FIELD-LEN
+          IF FIELD-LEN > 0
+              INSPECT SAFE-TITLE(1:FIELD-LEN) REPLACING ALL " " BY "_"
+          END-IF
+
+          MOVE FUNCTION TRIM(EMPLOYER TRAILING) TO SAFE-EMPLOYER
+          MOVE FUNCTION LENGTH(FUNCTION TRIM(SAFE-EMPLOYER TRAILING)) TO FIELD-LEN
+          IF FIELD-LEN > 0
+              INSPECT SAFE-EMPLOYER(1:FIELD-LEN) REPLACING ALL " " BY "_"
+          END-IF
+
+          MOVE SPACES TO JOB-NAME
+          STRING FUNCTION TRIM(SAFE-TITLE)    DELIMITED BY SIZE
+                 "_"                          DELIMITED BY SIZE
+                 FUNCTION TRIM(SAFE-EMPLOYER) DELIMITED BY SIZE
+                 INTO JOB-NAME
+          END-STRING
+
+          MOVE SPACES TO WS-JOB-FILENAME
+          STRING "data/jobs/"                 DELIMITED BY SIZE
+                 FUNCTION TRIM(JOB-NAME)      DELIMITED BY SIZE
+                 INTO WS-JOB-FILENAME
+          END-STRING
+
+          *> ==================================
+          *> Create/clear the dedicated posting file
+          *> ==================================
+          OPEN OUTPUT JOB-FILE
+          CLOSE JOB-FILE
+
+          *> ==================================
+          *> Append one-line summary to JOB-INDEX
+          *> (kept simple for browsing)
+          *> ==================================
+          OPEN EXTEND JOB-INDEX
+          MOVE SPACES TO BROWSE-REC
+          STRING FUNCTION TRIM(JOB-NAME)   DELIMITED BY SIZE
+                 " | "                     DELIMITED BY SIZE
+                 FUNCTION TRIM(JOB-TITLE)  DELIMITED BY SIZE
+                 " | "                     DELIMITED BY SIZE
+                 FUNCTION TRIM(EMPLOYER)   DELIMITED BY SIZE
+                 " | "                     DELIMITED BY SIZE
+                 FUNCTION TRIM(LOCATION)   DELIMITED BY SIZE
+                 " | "                     DELIMITED BY SIZE
+                 FUNCTION TRIM(SALARY)     DELIMITED BY SIZE
+                 INTO BROWSE-REC
+          END-STRING
+          WRITE BROWSE-REC
+          CLOSE JOB-INDEX
+
+          *> ==================================
+          *> Write the full posting content
+          *> ==================================
+          OPEN OUTPUT JOB-FILE
+
+          MOVE SPACES TO JOB-REC
+          STRING "Job Title: "   DELIMITED BY SIZE
+                 JOB-TITLE       DELIMITED BY SIZE
+                 INTO JOB-REC
+          WRITE JOB-REC
+
+          MOVE SPACES TO JOB-REC
+          STRING "Description: " DELIMITED BY SIZE
+                 DESCRIPTION     DELIMITED BY SIZE
+                 INTO JOB-REC
+          WRITE JOB-REC
+
+          MOVE SPACES TO JOB-REC
+          STRING "Employer: "    DELIMITED BY SIZE
+                 EMPLOYER        DELIMITED BY SIZE
+                 INTO JOB-REC
+          WRITE JOB-REC
+
+          MOVE SPACES TO JOB-REC
+          STRING "Location: "    DELIMITED BY SIZE
+                 LOCATION        DELIMITED BY SIZE
+                 INTO JOB-REC
+          WRITE JOB-REC
+
+          MOVE SPACES TO JOB-REC
+          STRING "Salary: "      DELIMITED BY SIZE
+                 SALARY          DELIMITED BY SIZE
+                 INTO JOB-REC
+          WRITE JOB-REC
+
+          CLOSE JOB-FILE
+
+          MOVE "Job/Internship posting saved successfully." TO MSG
+          PERFORM WRITE-OUTPUT
+          PERFORM USER-MENU
+          EXIT PARAGRAPH.
 
        *> create account function
        DO-CREATE.

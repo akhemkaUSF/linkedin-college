@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser5
+Password5!
+LOGIN
+testuser5
+Password5!
+3
+Charlie
+Brown
+Princeton
+Physics
+2024
+
+Research Assistant
+Princeton Lab
+2022-2024
+Conducted physics experiments
+
+
+
+
+
+
+B.S. Physics
+Princeton
+2020-2024
+
+
+
+
+
+8
+1
+Research Scientist Position
+Seeking a research scientist with strong background in physics and mathematics.
+
+Boston, MA
+$70,000/year
+0

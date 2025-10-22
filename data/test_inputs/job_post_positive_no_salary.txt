@@ -1,0 +1,40 @@
+STARTOVER
+CREATE
+testuser2
+Password2!
+LOGIN
+testuser2
+Password2!
+3
+Jane
+Smith
+Stanford
+Data Science
+2023
+
+Data Analyst
+DataCorp
+2021-2023
+Analyzed complex datasets
+
+
+
+
+
+
+M.S. Data Science
+Stanford
+2021-2023
+
+
+
+
+
+8
+1
+Data Science Internship
+Looking for a data science intern to help with machine learning projects and data analysis.
+Facebook
+Menlo Park, CA
+
+0

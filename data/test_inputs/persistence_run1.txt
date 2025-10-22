@@ -1,0 +1,84 @@
+STARTOVER
+CREATE
+JohnSmith
+Password1!
+LOGIN
+JohnSmith
+Password1!
+3
+John
+Smith
+New York University
+Business Administration
+2024
+About
+Exp1
+CompanyA
+2023
+Desc
+ 
+ 
+ 
+ 
+ 
+ 
+Bachelor of Science
+New York University
+2020–2024
+High School Diploma
+Roosevelt High School
+2010–2020
+Certificate
+Provider
+2020
+0
+
+CREATE
+Emily225
+Password1!
+LOGIN
+Emily225
+Password1!
+3
+Emily
+Johnson
+University of California, Berkeley
+Computer Science
+2023
+About
+Exp1
+CompanyB
+2022
+Desc
+ 
+ 
+ 
+ 
+ 
+ 
+Bachelor of Science
+University of California, Berkeley
+2019–2023
+High School Diploma
+San Francisco High School
+2015–2019
+Certificate
+Coursera
+2022
+0
+
+LOGIN
+Emily225
+Password1!
+5
+John Smith
+Y
+0
+
+LOGIN
+JohnSmith
+Password1!
+6
+Y
+0
+
