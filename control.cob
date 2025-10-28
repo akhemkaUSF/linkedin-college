@@ -234,6 +234,8 @@
            CLOSE INPUTFILE 
            CLOSE OUTPUTFILE
            CLOSE ACCOUNTS
+           CLOSE APPLICATIONS
+           CLOSE JOB-INDEX
            MOVE 0 TO RETURN-CODE
            STOP RUN.
 
@@ -324,6 +326,12 @@
            OPEN OUTPUT JOB-INDEX
            IF JOB-FS = "00"
               CLOSE JOB-INDEX
+           END-IF
+
+           CLOSE APPLICATIONS
+           OPEN OUTPUT APPLICATIONS
+           IF APPLICATIONS-FS = "00"
+              CLOSE APPLICATIONS
            END-IF
 
            MOVE "All data cleared (accounts, connections, network)." TO MSG
