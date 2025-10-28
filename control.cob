@@ -44,7 +44,7 @@
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS APPLICATIONS-FS.
 
-       DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
+       DATA DIVISION. *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
        FD  INPUTFILE. *> FD is a file description. Marks the start of a record layout for a file we declared earlier in the FILE-CONTROL section
        01  INPUT-REC            PIC X(100). *> defines type and size: alphanumeric, 100 characters long. we start the line 01 because it's one complete record
@@ -74,7 +74,7 @@
        01  JOB-REC            PIC X(120).
 
        FD  JOB-INDEX.
-       01  BROWSE-REC         PIC X(120).
+       01  BROWSE-REC         PIC X(1000).
 
        FD APPLICATIONS.
        01 APPLICATIONS-REC    PIC X(120).
@@ -529,7 +529,6 @@
                               PERFORM UNTIL JOB-EOF = "Y"
                                   PERFORM PRINT-JOB
                               END-PERFORM
-                              PERFORM WRITE-OUTPUT
                           END-IF
 
                           CLOSE JOB-FILE        
@@ -705,40 +704,60 @@
                  AT END
                     EXIT PERFORM
                  NOT AT END
-                    MOVE SPACES TO
-                       JOB-NAME
-                       JOB-TITLE
-                       EMPLOYER
-                       LOCATION
-                       SALARY
-                      
-                    PERFORM WRITE-OUTPUT
+                    *> Clear all fields before processing
+                    MOVE SPACES TO JOB-NAME
+                    MOVE SPACES TO JOB-TITLE
+                    MOVE SPACES TO EMPLOYER
+                    MOVE SPACES TO LOCATION
+                    MOVE SPACES TO SALARY
 
                     UNSTRING BROWSE-REC DELIMITED BY "|"
-                       INTO 
+                       INTO
                             JOB-NAME
                             JOB-TITLE
                             EMPLOYER
                             LOCATION
                             SALARY
-                    END-UNSTRING               
-      
+                    END-UNSTRING
+
+                    *> Trim each field by copying to temp and back
+                    MOVE FUNCTION TRIM(JOB-NAME) TO WS-FIELD
+                    MOVE SPACES TO JOB-NAME
+                    MOVE WS-FIELD TO JOB-NAME
+
+                    MOVE FUNCTION TRIM(JOB-TITLE) TO WS-FIELD
+                    MOVE SPACES TO JOB-TITLE
+                    MOVE WS-FIELD TO JOB-TITLE
+
+                    MOVE FUNCTION TRIM(EMPLOYER) TO WS-FIELD
+                    MOVE SPACES TO EMPLOYER
+                    MOVE WS-FIELD TO EMPLOYER
+
+                    MOVE FUNCTION TRIM(LOCATION) TO WS-FIELD
+                    MOVE SPACES TO LOCATION
+                    MOVE WS-FIELD TO LOCATION
+
+                    MOVE FUNCTION TRIM(SALARY) TO WS-FIELD
+                    MOVE SPACES TO SALARY
+                    MOVE WS-FIELD TO SALARY
+
+                    MOVE SPACES TO MSG
                     STRING "Job Title: "              DELIMITED BY SIZE
-                           FUNCTION TRIM(JOB-TITLE) DELIMITED BY SIZE
+                           FUNCTION TRIM(JOB-TITLE)   DELIMITED BY SIZE
                            INTO MSG
                     END-STRING
                     PERFORM WRITE-OUTPUT
 
-                    
-                    STRING "Employer: "              DELIMITED BY SIZE
-                           FUNCTION TRIM(EMPLOYER) DELIMITED BY SIZE
+                    MOVE SPACES TO MSG
+                    STRING "Employer: "               DELIMITED BY SIZE
+                           FUNCTION TRIM(EMPLOYER)    DELIMITED BY SIZE
                            INTO MSG
                     END-STRING
                     PERFORM WRITE-OUTPUT
 
-
-                    STRING "Location: "              DELIMITED BY SIZE
-                           FUNCTION TRIM(LOCATION) DELIMITED BY SIZE
+                    MOVE SPACES TO MSG
+                    STRING "Location: "               DELIMITED BY SIZE
+                           FUNCTION TRIM(LOCATION)    DELIMITED BY SIZE
                            INTO MSG
                     END-STRING
                     PERFORM WRITE-OUTPUT
@@ -871,6 +890,7 @@
           *> (kept simple for browsing)
           *> ==================================
           OPEN EXTEND JOB-INDEX
+          INITIALIZE BROWSE-REC
           MOVE SPACES TO BROWSE-REC
           STRING FUNCTION TRIM(JOB-NAME)   DELIMITED BY SIZE
                  " | "                     DELIMITED BY SIZE
