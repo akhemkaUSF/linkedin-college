@@ -944,8 +944,7 @@
           CLOSE JOB-FILE
 
           MOVE "Job/Internship posting saved successfully." TO MSG
-          PERFORM WRITE-OUTPUT
-          PERFORM USER-MENU
+          PERFORM WRITE-OUTPUT    
           EXIT PARAGRAPH.
 
        *> create account function
