@@ -23,6 +23,7 @@
            SELECT NETWORK ASSIGN TO "data/network.txt"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS NET-FS.
+           
            SELECT CONN-TMP ASSIGN TO "data/connections.tmp"
               ORGANIZATION IS LINE SEQUENTIAL
               FILE STATUS IS TMP-FS.
@@ -39,7 +40,11 @@
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS BROWSE-FS.
 
-       DATA DIVISION *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
+           SELECT APPLICATIONS ASSIGN TO "data/applications.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS APPLICATIONS-FS.
+
+       DATA DIVISION. *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
        FD  INPUTFILE. *> FD is a file description. Marks the start of a record layout for a file we declared earlier in the FILE-CONTROL section
        01  INPUT-REC            PIC X(100). *> defines type and size: alphanumeric, 100 characters long. we start the line 01 because it's one complete record
@@ -69,8 +74,10 @@
        01  JOB-REC            PIC X(120).
 
        FD  JOB-INDEX.
-       01  BROWSE-REC         PIC X(120).
+       01  BROWSE-REC         PIC X(1000).
 
+       FD APPLICATIONS.
+       01 APPLICATIONS-REC    PIC X(120).
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS              PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
@@ -80,21 +87,24 @@
        77  TMP-FS              PIC XX VALUE SPACES.
        77  PRO-FS              PIC XX VALUE SPACES.
        77  JOB-FS              PIC XX VALUE SPACES.
-       77  BROWSE-FS              PIC XX VALUE SPACES.
+       77  BROWSE-FS           PIC XX VALUE SPACES.
+       77  APPLICATIONS-FS     PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
 
        77  EOF-FLAG             PIC X  VALUE "N". *> END of File flag variable. "N" is the initial value (since we're not at the end of the file) 
        77  PROFILE-EOF          PIC X  VALUE "N".
+       77  JOB-EOF              PIC X  VALUE "N".
+       77  APPLICATIONS-EOF              PIC X  VALUE "N".
        77  USERNAME             PIC X(20).
        77  PASSWORD             PIC X(20).
        77  VALID-LOGIN          PIC X  VALUE "N". *> password validation. doesn't actually becmoe "Y" until we validate the password
        77  ACCT-COUNT           PIC 9  VALUE 0. *> number of accounts accounts.txt
-       77      OPTION-CHOICE         PIC 9  VALUE 0. *> option selection from the user
+       77  OPTION-CHOICE        PIC 9  VALUE 0. *> option selection from the user
        77  MSG                  PIC X(150). 
-       77  WS-TEMP    PIC X(10).
-       77  FIELD-LEN PIC 9(4) VALUE ZERO.
+       77  WS-TEMP              PIC X(10).
+       77  FIELD-LEN            PIC 9(4) VALUE ZERO.
 
 
        77  WS-FILENAME          PIC X(128).
@@ -140,14 +150,14 @@
 
 
        77  WS-JOB-FILENAME    PIC X(128).
-       77  JOB-NAME           PIC X(128).
+       77  JOB-NAME           PIC X(500).
 
        *> Core job fields
-       77  JOB-TITLE          PIC X(128).
+       77  JOB-TITLE          PIC X(300).
        77  DESCRIPTION        PIC X(5000).
-       77  EMPLOYER           PIC X(128).
-       77  LOCATION           PIC X(128).
-       77  SALARY             PIC X(64).
+       77  EMPLOYER           PIC X(300).
+       77  LOCATION           PIC X(300).
+       77  SALARY             PIC X(300).
 
        *> Minimal helpers to make a safe filename
        77  SAFE-TITLE         PIC X(128).
@@ -174,6 +184,22 @@
               OPEN OUTPUT CONNECTIONS
               CLOSE CONNECTIONS
               OPEN I-O CONNECTIONS
+           END-IF
+
+           OPEN I-O JOB-INDEX
+           IF JOB-FS NOT = "00"
+              CLOSE JOB-INDEX
+              OPEN OUTPUT JOB-INDEX
+              CLOSE JOB-INDEX
+              OPEN I-O JOB-INDEX
+           END-IF
+
+           OPEN I-O APPLICATIONS
+           IF APPLICATIONS-FS NOT = "00"
+              CLOSE APPLICATIONS
+              OPEN OUTPUT APPLICATIONS
+              CLOSE APPLICATIONS
+              OPEN I-O APPLICATIONS
            END-IF
 
            *> Ensure NETWORK file exists
@@ -208,6 +234,8 @@
            CLOSE INPUTFILE 
            CLOSE OUTPUTFILE
            CLOSE ACCOUNTS
+           CLOSE APPLICATIONS
+           CLOSE JOB-INDEX
            MOVE 0 TO RETURN-CODE
            STOP RUN.
 
@@ -292,6 +320,18 @@
            OPEN OUTPUT PROFILES-INDEX
            IF PRO-FS = "00"
               CLOSE PROFILES-INDEX
+           END-IF
+
+           CLOSE JOB-INDEX
+           OPEN OUTPUT JOB-INDEX
+           IF JOB-FS = "00"
+              CLOSE JOB-INDEX
+           END-IF
+
+           CLOSE APPLICATIONS
+           OPEN OUTPUT APPLICATIONS
+           IF APPLICATIONS-FS = "00"
+              CLOSE APPLICATIONS
            END-IF
 
            MOVE "All data cleared (accounts, connections, network)." TO MSG
@@ -425,7 +465,7 @@
            END-EVALUATE.
 
        JOB-INTERNSHIP-SEARCH. 
-          MOVE "Choose: 0=Return, 1=Post a job/internship, 2=Browse Jobs/Internships" TO MSG
+          MOVE "Choose: 0=Return, 1=Post a job/internship, 2=Browse Jobs/Internships 3=View Applications" TO MSG
           PERFORM WRITE-OUTPUT
           READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
@@ -438,15 +478,303 @@
                 EXIT PARAGRAPH 
              WHEN 1 
                 PERFORM POST-JOB-INTERNSHIP
+                PERFORM JOB-INTERNSHIP-SEARCH
              WHEN 2
-                MOVE "Under Construction" to MSG 
-                PERFORM WRITE-OUTPUT 
+                PERFORM BROWSE-JOB-INTERNSHIP
+                PERFORM JOB-INTERNSHIP-SEARCH
+             WHEN 3
+                PERFORM VIEW-APPLICATIONS
+                PERFORM JOB-INTERNSHIP-SEARCH
            END-EVALUATE.
        
+       VIEW-APPLICATIONS. 
+           MOVE "Your Job Applications" to MSG
+           PERFORM WRITE-OUTPUT 
+           OPEN INPUT APPLICATIONS
+           IF APPLICATIONS-FS NOT = "00"
+              MOVE "ERROR: could not open applications" TO MSG
+              STRING MSG DELIMITED BY SIZE
+                     BROWSE-FS DELIMITED BY SIZE
+                     ")"      DELIMITED BY SIZE
+                     INTO MSG
+              END-STRING
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
+           PERFORM UNTIL 1 = 2
+              READ APPLICATIONS
+                  AT END
+                      EXIT PERFORM
+                  NOT AT END
+                      MOVE SPACES TO TARGET-USER JOB-NAME
+
+                      UNSTRING APPLICATIONS-REC DELIMITED BY "|"
+                         INTO TARGET-USER
+                              JOB-NAME
+                      END-UNSTRING
+
+                      IF TARGET-USER = USERNAME
+                          MOVE SPACES TO WS-JOB-FILENAME
+                          STRING "data/jobs/"                DELIMITED BY SIZE
+                                 FUNCTION TRIM(JOB-NAME)     DELIMITED BY SIZE
+                                 INTO WS-JOB-FILENAME
+                          END-STRING
+
+                          MOVE "N" TO JOB-EOF
+                          OPEN INPUT JOB-FILE
+
+
+                          IF JOB-FS = "00"
+                              PERFORM UNTIL JOB-EOF = "Y"
+                                  PERFORM PRINT-JOB
+                              END-PERFORM
+                          END-IF
+
+                          CLOSE JOB-FILE        
+                      END-IF
+              END-READ
+          END-PERFORM
+
+           CLOSE APPLICATIONS
+           EXIT PARAGRAPH.
+
+       BROWSE-JOB-INTERNSHIP.
+           PERFORM PRINT-JOBS-INTERNSHIPS
+           MOVE "Would you like more details on a specific job? (Y/N)" to MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END MOVE SPACE TO RESP-CHAR
+                 NOT AT END MOVE FUNCTION TRIM(INPUT-REC)(1:1) TO RESP-CHAR
+           END-READ
+           IF RESP-CHAR = "Y" OR RESP-CHAR = "y"
+              PERFORM VIEW-JOB-DETAILS
+           END-IF
+           EXIT PARAGRAPH.
+
+       VIEW-JOB-DETAILS.
+           MOVE "Enter the job title of the job you are looking for:" TO MSG
+           PERFORM WRITE-OUTPUT
+           
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO JOB-TITLE
+           END-READ
+
+           MOVE "Enter the employer of the job you are looking for" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO EMPLOYER
+           END-READ
+
+           MOVE FUNCTION TRIM(JOB-TITLE TRAILING) TO SAFE-TITLE
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(SAFE-TITLE TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT SAFE-TITLE(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+
+           MOVE FUNCTION TRIM(EMPLOYER TRAILING) TO SAFE-EMPLOYER
+           MOVE FUNCTION LENGTH(FUNCTION TRIM(SAFE-EMPLOYER TRAILING)) TO FIELD-LEN
+           IF FIELD-LEN > 0
+              INSPECT SAFE-EMPLOYER(1:FIELD-LEN) REPLACING ALL " " BY "_"
+           END-IF
+
+           MOVE SPACES TO JOB-NAME
+           STRING FUNCTION TRIM(SAFE-TITLE)    DELIMITED BY SIZE
+                 "_"                          DELIMITED BY SIZE
+                 FUNCTION TRIM(SAFE-EMPLOYER) DELIMITED BY SIZE
+                 INTO JOB-NAME
+           END-STRING
+
+           MOVE JOB-NAME TO MSG
+           PERFORM WRITE-OUTPUT
+
+           MOVE SPACES TO WS-JOB-FILENAME
+
+           MOVE "Searching for job post..." TO MSG
+           PERFORM WRITE-OUTPUT
+
+           STRING "data/jobs/" DELIMITED BY SIZE
+                  FUNCTION TRIM(JOB-NAME) DELIMITED BY SIZE
+                  INTO WS-JOB-FILENAME
+           END-STRING
+
+           *> Try to open the job file directly using the converted filename
+           MOVE 'N' TO JOB-EOF
+           OPEN INPUT JOB-FILE
+           IF JOB-FS = "00"
+              MOVE "Job Posting found. Displaying job:" TO MSG
+              PERFORM WRITE-OUTPUT
+              PERFORM UNTIL JOB-EOF = "Y"
+                  PERFORM PRINT-JOB
+              END-PERFORM
+              
+               MOVE "Would you like to apply to this job? (Y/N)" TO MSG 
+               PERFORM WRITE-OUTPUT
+               READ INPUTFILE AT END MOVE SPACE TO RESP-CHAR
+                 NOT AT END MOVE FUNCTION TRIM(INPUT-REC)(1:1) TO RESP-CHAR
+               END-READ
+               IF RESP-CHAR = "Y" OR RESP-CHAR = "y"
+                   PERFORM SUBMIT-APPLICATION
+               END-IF
+              CLOSE JOB-FILE
+           EXIT PARAGRAPH.
+             
+       SUBMIT-APPLICATION.
+          CLOSE APPLICATIONS
+          OPEN EXTEND APPLICATIONS
+
+           *> If file not found, create it, then reopen for EXTEND
+           IF APPLICATIONS-FS = "35"
+              OPEN OUTPUT APPLICATIONS
+              IF APPLICATIONS-FS NOT = "00"
+                 STRING "ERROR: cannot create data/applications.txt (FS="
+                        APPLICATIONS-FS
+                        ")"
+                        DELIMITED BY SIZE INTO MSG
+                 END-STRING
+                 PERFORM WRITE-OUTPUT
+                 EXIT PARAGRAPH
+              END-IF
+              CLOSE APPLICATIONS
+              OPEN EXTEND APPLICATIONS
+           END-IF
+
+           *> If still not OK, bail out with the visible FS code
+           IF APPLICATIONS-FS NOT = "00"
+              STRING "ERROR: cannot open data/applications.txt (FS="
+                     APPLICATIONS-FS
+                     ")"
+                     DELIMITED BY SIZE INTO MSG
+              END-STRING
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
+           *> Build a single line: username | job-name
+           MOVE SPACES TO APPLICATIONS-REC
+           STRING
+              FUNCTION TRIM(USERNAME)  DELIMITED BY SIZE
+              " | "                    DELIMITED BY SIZE
+              FUNCTION TRIM(JOB-NAME)  DELIMITED BY SIZE
+              INTO APPLICATIONS-REC
+           END-STRING
+
+           *> Append it
+           WRITE APPLICATIONS-REC
+
+           *> Report result
+           IF APPLICATIONS-FS NOT = "00"
+              STRING "ERROR: write failed (FS="
+                     APPLICATIONS-FS
+                     ")"
+                     DELIMITED BY SIZE INTO MSG
+              END-STRING
+              PERFORM WRITE-OUTPUT
+           ELSE
+              MOVE "You have submitted an application" TO MSG
+              PERFORM WRITE-OUTPUT
+           END-IF
+
+           CLOSE APPLICATIONS
+           EXIT PARAGRAPH.
+
+       PRINT-JOB. 
+           READ JOB-FILE
+              AT END
+                  MOVE "Y" TO JOB-EOF
+              NOT AT END
+                  MOVE FUNCTION TRIM(JOB-REC) TO MSG
+                  PERFORM WRITE-OUTPUT
+           END-READ.
+       
+       PRINT-JOBS-INTERNSHIPS.
+          OPEN INPUT JOB-INDEX
+           IF BROWSE-FS NOT = "00"
+              MOVE "ERROR: could not open jobs.idx (status=" TO MSG
+              STRING MSG DELIMITED BY SIZE
+                     BROWSE-FS DELIMITED BY SIZE
+                     ")"      DELIMITED BY SIZE
+                     INTO MSG
+              END-STRING
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
+           PERFORM UNTIL 1 = 2
+              READ JOB-INDEX
+                 AT END
+                    EXIT PERFORM
+                 NOT AT END
+                    *> Clear all fields before processing
+                    MOVE SPACES TO JOB-NAME
+                    MOVE SPACES TO JOB-TITLE
+                    MOVE SPACES TO EMPLOYER
+                    MOVE SPACES TO LOCATION
+                    MOVE SPACES TO SALARY
+
+                    UNSTRING BROWSE-REC DELIMITED BY "|"
+                       INTO
+                            JOB-NAME
+                            JOB-TITLE
+                            EMPLOYER
+                            LOCATION
+                            SALARY
+                    END-UNSTRING
+
+                    *> Trim each field by copying to temp and back
+                    MOVE FUNCTION TRIM(JOB-NAME) TO WS-FIELD
+                    MOVE SPACES TO JOB-NAME
+                    MOVE WS-FIELD TO JOB-NAME
+
+                    MOVE FUNCTION TRIM(JOB-TITLE) TO WS-FIELD
+                    MOVE SPACES TO JOB-TITLE
+                    MOVE WS-FIELD TO JOB-TITLE
+
+                    MOVE FUNCTION TRIM(EMPLOYER) TO WS-FIELD
+                    MOVE SPACES TO EMPLOYER
+                    MOVE WS-FIELD TO EMPLOYER
+
+                    MOVE FUNCTION TRIM(LOCATION) TO WS-FIELD
+                    MOVE SPACES TO LOCATION
+                    MOVE WS-FIELD TO LOCATION
+
+                    MOVE FUNCTION TRIM(SALARY) TO WS-FIELD
+                    MOVE SPACES TO SALARY
+                    MOVE WS-FIELD TO SALARY
+
+                    MOVE SPACES TO MSG
+                    STRING "Job Title: "              DELIMITED BY SIZE
+                           FUNCTION TRIM(JOB-TITLE)   DELIMITED BY SIZE
+                           INTO MSG
+                    END-STRING
+                    PERFORM WRITE-OUTPUT
+
+                    MOVE SPACES TO MSG
+                    STRING "Employer: "               DELIMITED BY SIZE
+                           FUNCTION TRIM(EMPLOYER)    DELIMITED BY SIZE
+                           INTO MSG
+                    END-STRING
+                    PERFORM WRITE-OUTPUT
+
+                    MOVE SPACES TO MSG
+                    STRING "Location: "               DELIMITED BY SIZE
+                           FUNCTION TRIM(LOCATION)    DELIMITED BY SIZE
+                           INTO MSG
+                    END-STRING
+                    PERFORM WRITE-OUTPUT
+
+                    MOVE SPACES TO MSG
+                    PERFORM WRITE-OUTPUT
+              END-READ
+             
+
+           END-PERFORM
+
+
+
+           CLOSE JOB-INDEX
+           EXIT PARAGRAPH.
+
        POST-JOB-INTERNSHIP.
-          *> -----------------------
-          *> Collect Job Title (REQ)
-          *> -----------------------
           MOVE "Enter Job Title:" TO MSG
           PERFORM WRITE-OUTPUT
           MOVE SPACES TO WS-FIELD
@@ -562,6 +890,7 @@
           *> (kept simple for browsing)
           *> ==================================
           OPEN EXTEND JOB-INDEX
+          INITIALIZE BROWSE-REC
           MOVE SPACES TO BROWSE-REC
           STRING FUNCTION TRIM(JOB-NAME)   DELIMITED BY SIZE
                  " | "                     DELIMITED BY SIZE
@@ -615,8 +944,7 @@
           CLOSE JOB-FILE
 
           MOVE "Job/Internship posting saved successfully." TO MSG
-          PERFORM WRITE-OUTPUT
-          PERFORM USER-MENU
+          PERFORM WRITE-OUTPUT    
           EXIT PARAGRAPH.
 
        *> create account function

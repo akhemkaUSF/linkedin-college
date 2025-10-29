@@ -1,49 +1,57 @@
 STARTOVER
-*> ==== SCENARIO shows notifcation for acceptance and rejections ====
-
 CREATE
-Alica
-Password1!
+testuser9
+Password9!
 LOGIN
-Alica
-Password1!
-3
-Taylor
-Morris
-Usf
-Bussiness Managment 
-2024
-Focus on consulting
-Consulting Intern
-USF Intern 
-2025
-Managed officers.
-Club Officer
-Finaince Club
-2023–2024
-Organized CTF nights.
-Bachelor of Arts
-Riverside College
-2021–2025
-High School Diploma
-Roosevelt High School
-2010–2020
-Certificate in Digital Marketing
-LinkedIn Learning
-2020
+testuser9
+Password9!
+8 
+0
 8
 1
-Job Title 
-Brief Description 
-Employer
-Location
-8799
+Principal Software Engineer
+We are seeking an exceptional Principal Software Engineer to join our elite engineering team. 
+Microsoft
+Redmond, WA
+$180,000-$220,000/year + equity + bonus
+0
+0
+CREATE
+newguy
+Passwrod1!
+LOGIN
+newguy
+Passwrod1!
 8
 1
-Jobs Titlesssssss
-Brief Description 
-AnotherGuyyyyy
-Location
-8799
+New Job
+Nice Description 
+New Company 
+Seattle, WY 
+$2 an hour
+0
+0
+LOGIN
+testuser9
+Password9!
+8
+1
+One more job
+yes we need one
+Bad Company
+Texas
+$1000 an hour 
 8
 2
+Y
+Principal Software Engineer
+Microsoft
+Y
+2
+Y
+One more job 
+Bad Company
+Y
+3
+0
+0
