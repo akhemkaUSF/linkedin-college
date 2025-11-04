@@ -1502,6 +1502,16 @@ IDENTIFICATION DIVISION.
               EXIT PARAGRAPH
            END-IF
 
+           *> Validate recipient is in sender's network (connected)
+           MOVE FUNCTION TRIM(USERNAME)      TO CANON-A
+           MOVE FUNCTION TRIM(MSG-RECIPIENT) TO CANON-B
+           PERFORM IS-CONNECTED
+           IF REQ-FOUND = "N"
+              MOVE "You can only message users you are connected with." TO MSG
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
            *> Prompt for message content
            MOVE "Enter your message (max 200 characters):" TO MSG
            PERFORM WRITE-OUTPUT
