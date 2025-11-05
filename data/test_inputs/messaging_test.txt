@@ -1,0 +1,25 @@
+STARTOVER
+CREATE
+alice
+Password1!
+CREATE
+bob
+Password2!
+LOGIN
+alice
+Password1!
+9
+1
+bob
+Hello Bob! This is a test message from Alice.
+0
+0
+LOGIN
+bob
+Password2!
+9
+1
+alice
+Hi Alice! Thanks for the message. This is Bob replying.
+0
+0

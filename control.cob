@@ -1,4 +1,4 @@
-       IDENTIFICATION DIVISION.
+IDENTIFICATION DIVISION.
        PROGRAM-ID. CONTROLFLOW.   *> PROGRAM-ID gives the program its name (CONTROLFLOW)
 
        ENVIRONMENT DIVISION. *> big section where we describe our machine environment (files, devices, terminals, etc)
@@ -44,6 +44,10 @@
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS APPLICATIONS-FS.
 
+           SELECT MESSAGES ASSIGN TO "data/messages.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS MSG-FS.
+
        DATA DIVISION. *> we describe all the data the program can use -- the files, variables, and structure and size of each piece of data
        FILE SECTION. *> we're defining the files in this section
        FD  INPUTFILE. *> FD is a file description. Marks the start of a record layout for a file we declared earlier in the FILE-CONTROL section
@@ -78,6 +82,10 @@
 
        FD APPLICATIONS.
        01 APPLICATIONS-REC    PIC X(120).
+
+       FD  MESSAGES.
+       01  MESSAGE-REC        PIC X(300).
+
        WORKING-STORAGE SECTION.
        77 VALID-YEAR PIC X VALUE "N". *> defines program variables in memory
        77  ACC-FS              PIC XX VALUE SPACES.  *> file status for ACCOUNTS. we use 77 because it's a standalone variable
@@ -89,6 +97,8 @@
        77  JOB-FS              PIC XX VALUE SPACES.
        77  BROWSE-FS           PIC XX VALUE SPACES.
        77  APPLICATIONS-FS     PIC XX VALUE SPACES.
+
+       77  MSG-FS              PIC XX VALUE SPACES.
 
        77  FIRST-NAME           PIC X(50).
        77  LAST-NAME            PIC X(50).
@@ -163,6 +173,12 @@
        77  SAFE-TITLE         PIC X(128).
        77  SAFE-EMPLOYER      PIC X(128).
 
+       *> Messaging feature working storage
+       77  MSG-SENDER         PIC X(20).
+       77  MSG-RECIPIENT      PIC X(20).
+       77  MSG-CONTENT        PIC X(200).
+       77  MSG-EOF            PIC X  VALUE "N".
+
        PROCEDURE DIVISION. *> equivalent of the main function in other languages 
        MAIN-PARA. *> main entry point
            OPEN INPUT INPUTFILE *> opens input file
@@ -200,6 +216,15 @@
               OPEN OUTPUT APPLICATIONS
               CLOSE APPLICATIONS
               OPEN I-O APPLICATIONS
+           END-IF
+
+           *> Ensure MESSAGES file exists
+           OPEN I-O MESSAGES
+           IF MSG-FS NOT = "00"
+              CLOSE MESSAGES
+              OPEN OUTPUT MESSAGES
+              CLOSE MESSAGES
+              OPEN I-O MESSAGES
            END-IF
 
            *> Ensure NETWORK file exists
@@ -389,6 +414,8 @@
            PERFORM WRITE-OUTPUT
            MOVE "5=Search Profile, 6=View Pending Requests, 7=View My Network 8=Job search/internship" TO MSG
            PERFORM WRITE-OUTPUT
+           MOVE "9=Messages" TO MSG
+           PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
@@ -457,10 +484,13 @@
               WHEN 8 
                  PERFORM JOB-INTERNSHIP-SEARCH
                  PERFORM USER-MENU
+              WHEN 9
+                 PERFORM MESSAGING-MENU
+                 PERFORM USER-MENU
               WHEN 0
                  EXIT PARAGRAPH
               WHEN OTHER
-                 MOVE "Invalid option, you must select a number 0-7" TO MSG
+                 MOVE "Invalid option, you must select a number 0-9" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
 
@@ -1411,6 +1441,109 @@
               MOVE WS-FILENAME-SAVED TO WS-FILENAME
            END-IF.
        
+       *> ====================================
+       *> Messaging Feature
+       *> ====================================
+       MESSAGING-MENU.
+           MOVE "Messages - Choose: 1=Send a New Message, 2=View My Messages, 0=Return" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
+           END-READ
+           
+           MOVE OPTION-CHOICE TO MSG
+           PERFORM WRITE-OUTPUT
+           
+           EVALUATE OPTION-CHOICE
+              WHEN 1
+                 PERFORM SEND-NEW-MESSAGE
+              WHEN 2
+                 MOVE "Under Construction" TO MSG
+                 PERFORM WRITE-OUTPUT
+              WHEN 0
+                 EXIT PARAGRAPH
+              WHEN OTHER
+                 MOVE "Invalid option, choose 0, 1, or 2" TO MSG
+                 PERFORM WRITE-OUTPUT
+           END-EVALUATE
+           EXIT PARAGRAPH.
+
+       SEND-NEW-MESSAGE.
+           *> Prompt for recipient username
+           MOVE "Enter recipient username:" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO MSG-RECIPIENT
+           END-READ
+
+           *> Validate recipient exists in accounts
+           MOVE "N" TO USER-FOUND
+           OPEN INPUT ACCOUNTS
+           PERFORM UNTIL 1 = 0
+              READ ACCOUNTS NEXT RECORD
+                 AT END EXIT PERFORM
+                 NOT AT END
+                    UNSTRING ACCT-REC
+                       DELIMITED BY ALL " "
+                       INTO ACCT-USER ACCT-PASS
+                    END-UNSTRING
+                    IF MSG-RECIPIENT = FUNCTION TRIM(ACCT-USER)
+                       MOVE "Y" TO USER-FOUND
+                       EXIT PERFORM
+                    END-IF
+              END-READ
+           END-PERFORM
+           CLOSE ACCOUNTS
+           OPEN I-O ACCOUNTS
+
+           IF USER-FOUND = "N"
+              MOVE "User not found. Message not sent." TO MSG
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
+           *> Validate recipient is in sender's network (connected)
+           MOVE FUNCTION TRIM(USERNAME)      TO CANON-A
+           MOVE FUNCTION TRIM(MSG-RECIPIENT) TO CANON-B
+           PERFORM IS-CONNECTED
+           IF REQ-FOUND = "N"
+              MOVE "You can only message users you are connected with." TO MSG
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
+           *> Prompt for message content
+           MOVE "Enter your message (max 200 characters):" TO MSG
+           PERFORM WRITE-OUTPUT
+           READ INPUTFILE AT END EXIT PARAGRAPH
+              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO MSG-CONTENT
+           END-READ
+
+           IF MSG-CONTENT = SPACES
+              MOVE "Message cannot be empty. Message not sent." TO MSG
+              PERFORM WRITE-OUTPUT
+              EXIT PARAGRAPH
+           END-IF
+
+           *> Store the message in messages.txt
+           *> Format: SENDER|RECIPIENT|MESSAGE_CONTENT
+           CLOSE MESSAGES
+           OPEN EXTEND MESSAGES
+           MOVE SPACES TO MESSAGE-REC
+           STRING FUNCTION TRIM(USERNAME)      DELIMITED BY SIZE
+                  "|"                          DELIMITED BY SIZE
+                  FUNCTION TRIM(MSG-RECIPIENT) DELIMITED BY SIZE
+                  "|"                          DELIMITED BY SIZE
+                  FUNCTION TRIM(MSG-CONTENT)   DELIMITED BY SIZE
+                  INTO MESSAGE-REC
+           END-STRING
+           WRITE MESSAGE-REC
+           CLOSE MESSAGES
+           OPEN I-O MESSAGES
+
+           MOVE "Message sent successfully." TO MSG
+           PERFORM WRITE-OUTPUT
+           EXIT PARAGRAPH.
 
 *> ================= Connections Feature =================
       COPY "networking.cpy".

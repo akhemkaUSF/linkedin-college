@@ -1,0 +1,2 @@
+alice|bob|Hello Bob! This is a test message from Alice.
+bob|alice|Hi Alice! Thanks for the message. This is Bob replying.
