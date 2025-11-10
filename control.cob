@@ -178,6 +178,7 @@ IDENTIFICATION DIVISION.
        77  MSG-RECIPIENT      PIC X(20).
        77  MSG-CONTENT        PIC X(200).
        77  MSG-EOF            PIC X  VALUE "N".
+       77  MSG-FOUND          PIC X  VALUE "N".
 
        PROCEDURE DIVISION. *> equivalent of the main function in other languages 
        MAIN-PARA. *> main entry point
@@ -1458,8 +1459,7 @@ IDENTIFICATION DIVISION.
               WHEN 1
                  PERFORM SEND-NEW-MESSAGE
               WHEN 2
-                 MOVE "Under Construction" TO MSG
-                 PERFORM WRITE-OUTPUT
+                 PERFORM VIEW-MY-MESSAGES
               WHEN 0
                  EXIT PARAGRAPH
               WHEN OTHER
@@ -1542,6 +1542,68 @@ IDENTIFICATION DIVISION.
            OPEN I-O MESSAGES
 
            MOVE "Message sent successfully." TO MSG
+           PERFORM WRITE-OUTPUT
+           EXIT PARAGRAPH.
+
+       VIEW-MY-MESSAGES.
+           MOVE "My Messages:" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "N" TO MSG-FOUND
+           MOVE "N" TO MSG-EOF
+
+           CLOSE MESSAGES
+           OPEN INPUT MESSAGES
+
+           PERFORM UNTIL MSG-EOF = "Y"
+              READ MESSAGES NEXT RECORD
+                 AT END
+                    MOVE "Y" TO MSG-EOF
+                 NOT AT END
+                    IF MESSAGE-REC = SPACES
+                       CONTINUE
+                    ELSE
+                       MOVE SPACES TO MSG-SENDER
+                       MOVE SPACES TO MSG-RECIPIENT
+                       MOVE SPACES TO MSG-CONTENT
+                       UNSTRING MESSAGE-REC
+                          DELIMITED BY "|"
+                          INTO MSG-SENDER
+                               MSG-RECIPIENT
+                               MSG-CONTENT
+                       END-UNSTRING
+                       IF FUNCTION TRIM(MSG-RECIPIENT) = FUNCTION TRIM(USERNAME)
+                          MOVE "Y" TO MSG-FOUND
+                          PERFORM DISPLAY-SINGLE-MESSAGE
+                       END-IF
+                    END-IF
+              END-READ
+           END-PERFORM
+
+           CLOSE MESSAGES
+           OPEN I-O MESSAGES
+
+           IF MSG-FOUND NOT = "Y"
+              MOVE "You have no messages at this time." TO MSG
+              PERFORM WRITE-OUTPUT
+           END-IF
+           EXIT PARAGRAPH.
+
+       DISPLAY-SINGLE-MESSAGE.
+           MOVE SPACES TO MSG
+           STRING "From: " DELIMITED BY SIZE
+                  FUNCTION TRIM(MSG-SENDER) DELIMITED BY SIZE
+                  INTO MSG
+           END-STRING
+           PERFORM WRITE-OUTPUT
+
+           MOVE SPACES TO MSG
+           STRING "Message: " DELIMITED BY SIZE
+                  FUNCTION TRIM(MSG-CONTENT) DELIMITED BY SIZE
+                  INTO MSG
+           END-STRING
+           PERFORM WRITE-OUTPUT
+
+           MOVE SPACES TO MSG
            PERFORM WRITE-OUTPUT
            EXIT PARAGRAPH.
 
