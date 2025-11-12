@@ -338,6 +338,13 @@ IDENTIFICATION DIVISION.
               OPEN I-O NETWORK
            END-IF
 
+           CLOSE MESSAGES
+           OPEN OUTPUT MESSAGES
+           IF MSG-FS = "00"
+              CLOSE MESSAGES
+              OPEN I-O MESSAGES
+           END-IF
+
            *> Reset derived in-memory counters/flags
            MOVE 0 TO ACCT-COUNT
 

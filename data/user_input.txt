@@ -77,8 +77,8 @@ Engineering
 
 4
 6
-alice
-A
+Y
+7
 0
 LOGIN
 alice
@@ -86,24 +86,77 @@ Password1!
 9
 1
 bob
-Hello Bob! We are connected, so this should work.
+5
+Bob Smith
+Y
 0
 0
 LOGIN
-alice
-Password1!
+bob
+Password2!
+9
+2
+0
+CREATE
+anuj
+Khemka4!
+LOGIN
+anuj
+Khemka4!
 9
 1
-charlie
-This should fail - we are not connected!
-0
+bob
+5
+Alice Green
+Y 
+5
+Bob Smith
+Y 
 0
 LOGIN
 alice
+Password1! 
+6 
+Y 
+0 
+LOGIN
+bob 
+Password2! 
+6 
+Y 
+0 
+LOGIN
+anuj
+Khemka4! 
+9 
+1
+alice 
+hi alice how you doing? 
+9 
+1 
+bob 
+hi bob how you doing?
+0
+LOGIN
+bob
+Password2!
+9
+2
+0
+LOGIN 
+alice
 Password1!
 9
+2
+0
+LOGIN
+anuj
+Khemka4!
+9
+2
+9
 1
-nonexistent
-This should fail - user does not exist!
-0
-0
+alice
+you left me on read?
+9
+2
