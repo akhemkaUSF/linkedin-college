@@ -157,6 +157,8 @@ IDENTIFICATION DIVISION.
        77  IDX-FN             PIC X(50).
        77  IDX-LN             PIC X(50).
        77  NAME-FOUND         PIC X  VALUE "N".
+       77  NET-A              PIC X(50).
+       77  NET-B              PIC X(50).
 
 
        77  WS-JOB-FILENAME    PIC X(128).
@@ -177,6 +179,7 @@ IDENTIFICATION DIVISION.
        77  MSG-SENDER         PIC X(20).
        77  MSG-RECIPIENT      PIC X(20).
        77  MSG-CONTENT        PIC X(200).
+       77  VALID-MSG          PIC X(20).
        77  MSG-EOF            PIC X  VALUE "N".
        77  MSG-FOUND          PIC X  VALUE "N".
 
@@ -418,11 +421,29 @@ IDENTIFICATION DIVISION.
 
        USER-MENU.
         *> user menu options presented after login
-           MOVE "Choose: 0=Return, 1=Search job, 2=Learn skill, 3=Create/Edit Profile, 4=Output Profile" TO MSG
+           MOVE "====================USER MENU====================" TO MSG
            PERFORM WRITE-OUTPUT
-           MOVE "5=Search Profile, 6=View Pending Requests, 7=View My Network 8=Job search/internship" TO MSG
+           MOVE "0 = Return" TO MSG
            PERFORM WRITE-OUTPUT
-           MOVE "9=Messages" TO MSG
+           MOVE "1 = Job/Internship Search" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "2 = Learn skill" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "3 = Create/Edit Profile" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "4 = Output Profile" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "5 = Search Profile" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "6 = View Pending Requests" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "7 = View My Network" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "8 = Messages" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "=================================================" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "Enter your choice (0-8):" TO MSG
            PERFORM WRITE-OUTPUT
            *> whatever number we select is the option we want 
            READ INPUTFILE AT END EXIT PARAGRAPH
@@ -433,12 +454,8 @@ IDENTIFICATION DIVISION.
            *> function to evaluate the option they choose
            EVALUATE OPTION-CHOICE *> we use the same value for both the overaching options and the skills. no reason to store both at the same time
               WHEN 1
-                 MOVE "Under Construction" TO MSG
-                 PERFORM WRITE-OUTPUT
-
-              *> add an option prompting them to find someone they know,
-              *> and then perform the search function
-
+                 PERFORM JOB-INTERNSHIP-SEARCH
+                 PERFORM USER-MENU
               WHEN 2
               *> lists the skills we actually want to select
                  MOVE "Pick a skill (1-5)" TO MSG
@@ -490,21 +507,29 @@ IDENTIFICATION DIVISION.
                  PERFORM VIEW-MY-NETWORK
                  PERFORM USER-MENU
               WHEN 8 
-                 PERFORM JOB-INTERNSHIP-SEARCH
-                 PERFORM USER-MENU
-              WHEN 9
                  PERFORM MESSAGING-MENU
                  PERFORM USER-MENU
               WHEN 0
                  EXIT PARAGRAPH
               WHEN OTHER
-                 MOVE "Invalid option, you must select a number 0-9" TO MSG
+                 MOVE "Invalid option, you must select a number 0-8" TO MSG
                  PERFORM WRITE-OUTPUT
            END-EVALUATE.
 
-       JOB-INTERNSHIP-SEARCH. 
-          MOVE "Choose: 0=Return, 1=Post a job/internship, 2=Browse Jobs/Internships 3=View Applications" TO MSG
+       JOB-INTERNSHIP-SEARCH.
+          MOVE "==============JOB/INTERNSHIP SEARCH==============" TO MSG
+          PERFORM WRITE-OUTPUT 
+          MOVE "0 = Return to Main Menu" TO MSG
           PERFORM WRITE-OUTPUT
+          MOVE "1 = Post a Job/Internship" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "2 = Browse Jobs/Internships" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "3 = View Applications" TO MSG
+          MOVE "=================================================" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE "Enter your choice (0-3):" TO MSG
+           PERFORM WRITE-OUTPUT
           READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
            END-READ
@@ -1455,6 +1480,18 @@ IDENTIFICATION DIVISION.
        MESSAGING-MENU.
            MOVE "Messages - Choose: 1=Send a New Message, 2=View My Messages, 0=Return" TO MSG
            PERFORM WRITE-OUTPUT
+           MOVE "==================MESSAGES MENU==================" TO MSG
+          PERFORM WRITE-OUTPUT 
+          MOVE "0 = Return to Main Menu" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE "1 = Send a New Message" TO MSG
+           PERFORM WRITE-OUTPUT
+           MOVE "2 = View My Messages" TO MSG
+           PERFORM WRITE-OUTPUT
+          MOVE "==================================================" TO MSG
+          PERFORM WRITE-OUTPUT
+          MOVE "Enter your choice (0-2):" TO MSG
+           PERFORM WRITE-OUTPUT
            READ INPUTFILE AT END EXIT PARAGRAPH
               NOT AT END MOVE FUNCTION NUMVAL(INPUT-REC) TO OPTION-CHOICE
            END-READ
@@ -1512,6 +1549,7 @@ IDENTIFICATION DIVISION.
            *> Validate recipient is in sender's network (connected)
            MOVE FUNCTION TRIM(USERNAME)      TO CANON-A
            MOVE FUNCTION TRIM(MSG-RECIPIENT) TO CANON-B
+           MOVE "N" TO REQ-FOUND
            PERFORM IS-CONNECTED
            IF REQ-FOUND = "N"
               MOVE "You can only message users you are connected with." TO MSG
@@ -1520,17 +1558,26 @@ IDENTIFICATION DIVISION.
            END-IF
 
            *> Prompt for message content
-           MOVE "Enter your message (max 200 characters):" TO MSG
-           PERFORM WRITE-OUTPUT
-           READ INPUTFILE AT END EXIT PARAGRAPH
-              NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO MSG-CONTENT
-           END-READ
-
-           IF MSG-CONTENT = SPACES
-              MOVE "Message cannot be empty. Message not sent." TO MSG
-              PERFORM WRITE-OUTPUT
-              EXIT PARAGRAPH
-           END-IF
+           MOVE "N" TO VALID-MSG
+           PERFORM UNTIL VALID-MSG = "Y"
+               MOVE "Enter your message (max 200 characters):" TO MSG
+               PERFORM WRITE-OUTPUT
+               READ INPUTFILE AT END EXIT PARAGRAPH
+                  NOT AT END MOVE FUNCTION TRIM(INPUT-REC) TO MSG-CONTENT
+               END-READ
+    
+               IF MSG-CONTENT = SPACES
+                  MOVE "Message cannot be empty. Please try again." TO MSG
+                  PERFORM WRITE-OUTPUT
+               ELSE
+                   IF FUNCTION LENGTH(FUNCTION TRIM(MSG-CONTENT)) > 200
+                       MOVE "Message too long! Maximum 200 characters. Please try again." TO MSG
+                       PERFORM WRITE-OUTPUT
+                   ELSE
+                       MOVE "Y" TO VALID-MSG
+                   END-IF
+               END-IF
+           END-PERFORM
 
            *> Store the message in messages.txt
            *> Format: SENDER|RECIPIENT|MESSAGE_CONTENT

@@ -194,29 +194,22 @@
 *> Inputs: CANON-A, CANON-B; Output: REQ-FOUND = "Y" if connected
        IS-CONNECTED.
            MOVE "N" TO REQ-FOUND
-           MOVE FUNCTION TRIM(CANON-A) TO CANON-A
-           MOVE FUNCTION TRIM(CANON-B) TO CANON-B
-           *> order lexicographically into CANON-A <= CANON-B
-           IF CANON-A > CANON-B
-              MOVE CANON-A TO WS-TEMP
-              MOVE CANON-B TO CANON-A
-              MOVE WS-TEMP TO CANON-B
-           END-IF
            OPEN INPUT NETWORK
            PERFORM UNTIL 1 = 0
-              READ NETWORK NEXT RECORD
-                 AT END EXIT PERFORM
-                 NOT AT END
-                    UNSTRING NET-REC DELIMITED BY ALL " "
-                       INTO ACCT-USER ACCT-PASS
-                    END-UNSTRING
-                    IF FUNCTION TRIM(ACCT-USER) = CANON-A
-                       AND FUNCTION TRIM(ACCT-PASS) = CANON-B
+               READ NETWORK NEXT record
+               AT END EXIT PERFORM
+               NOT AT END
+                   UNSTRING NET-REC
+                       DELIMITED BY ALL SPACES
+                       INTO NET-A NET-B
+                   END-UNSTRING
+                   *> Check Both directions A->B or B->A
+                   IF (NET-A = CANON-A AND NET-B = CANON-B) OR (NET-A = CANON-B AND NET-B = CANON-A)
                        MOVE "Y" TO REQ-FOUND
                        EXIT PERFORM
-                    END-IF
-              END-READ
-           END-PERFORM
+                   END-IF
+                END-READ
+           end-perform
            CLOSE NETWORK
            EXIT PARAGRAPH.
 
